@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import '../core/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -47,14 +47,8 @@ class _NotificationsListState extends State<NotificationsList> {
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -90,15 +84,8 @@ class _NotificationsListState extends State<NotificationsList> {
 
   Future<void> fetchNotifications() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     if (currentPage != 0) {
-      var uri = Uri.parse(
-          '$typedServerUrl/api/notifications/notifications/list/all?page=$currentPage');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+            var response = await ApiClient.instance.get('/api/notifications/notifications/list/all?page=$currentPage');
 
       if (response.statusCode == 200) {
         setState(() {
@@ -126,12 +113,7 @@ class _NotificationsListState extends State<NotificationsList> {
       }
     } else {
       currentPage = 1;
-      var uri =
-      Uri.parse('$typedServerUrl/api/notifications/notifications/list/all');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+            var response = await ApiClient.instance.get('/api/notifications/notifications/list/all');
 
       if (response.statusCode == 200) {
         setState(() {
@@ -160,14 +142,7 @@ class _NotificationsListState extends State<NotificationsList> {
 
   Future<void> clearAllNotification() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/notifications/notifications/bulk-delete/');
-    var response = await http.delete(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.delete('/api/notifications/notifications/bulk-delete/');
     if (response.statusCode == 200) {
       setState(() {
         notifications.clear();
@@ -178,14 +153,7 @@ class _NotificationsListState extends State<NotificationsList> {
 
   Future<void> deleteIndividualNotification(int notificationId) async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/notifications/notifications/$notificationId/');
-    var response = await http.delete(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.delete('/api/notifications/notifications/$notificationId/');
     if (response.statusCode == 200) {
       notifications.removeWhere((item) => item['id'] == notificationId);
       fetchNotifications();

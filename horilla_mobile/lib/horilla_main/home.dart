@@ -95,13 +95,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> permissionLeaveOverviewChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-perm/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-perm/');
     setState(() {
       if (response.statusCode == 200) {
         permissionLeaveOverviewCheck = true;
@@ -116,13 +110,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> permissionLeaveTypeChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-type/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-type/');
     setState(() {
       if (response.statusCode == 200) {
         permissionLeaveTypeCheck = true;
@@ -137,13 +125,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> permissionGeoFencingMapView() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/geofencing/setup-check/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/geofencing/setup-check/');
     setState(() {
       permissionGeoFencingMapViewCheck = response.statusCode == 200;
     });
@@ -151,13 +133,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> permissionLeaveRequestChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-request/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-request/');
     setState(() {
       if (response.statusCode == 200) {
         permissionLeaveRequestCheck = true;
@@ -172,13 +148,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> permissionLeaveAssignChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-assign/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-assign/');
     setState(() {
       if (response.statusCode == 200) {
         permissionLeaveAssignCheck = true;
@@ -228,14 +198,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   void permissionChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-    Uri.parse('$typedServerUrl/api/attendance/permission-check/attendance');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/attendance/permission-check/attendance');
     setState(() {
       permissionCheck = response.statusCode == 200;
     });
@@ -243,13 +206,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> permissionWardChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/ward/check-ward/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/ward/check-ward/');
     setState(() {
       permissionWardCheck = response.statusCode == 200;
     });
@@ -257,14 +214,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -301,21 +252,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> fetchNotifications() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     List<Map<String, dynamic>> allNotifications = [];
     int page = 1;
     bool hasMore = true;
 
     while (hasMore) {
-      var uri = Uri.parse(
-          '$typedServerUrl/api/notifications/notifications/list/unread?page=$page');
-
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+            var response = await ApiClient.instance.get('/api/notifications/notifications/list/unread?page=$page');
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
@@ -360,14 +302,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> unreadNotificationsCount() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/notifications/notifications/list/unread');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/notifications/notifications/list/unread');
 
     if (response.statusCode == 200) {
       setState(() {
@@ -379,14 +314,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> markReadNotification(int notificationId) async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/notifications/notifications/$notificationId/');
-    var response = await http.post(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.post('/api/notifications/notifications/$notificationId/');
     if (response.statusCode == 200) {
       setState(() {
         notifications.removeWhere((item) => item['id'] == notificationId);
@@ -398,14 +326,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> markAllReadNotification() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-    Uri.parse('$typedServerUrl/api/notifications/notifications/bulk-read/');
-    var response = await http.post(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.post('/api/notifications/notifications/bulk-read/');
     if (response.statusCode == 200) {
       setState(() {
         notifications.clear();
@@ -417,15 +338,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future checkAllPermissions() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     Future<bool> _getPerm(String endpoint) async {
       try {
         var uri = Uri.parse('$typedServerUrl$endpoint');
         var res = await http.get(uri, headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
+          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
         });
         return res.statusCode == 200;
       } catch (e) {
@@ -451,14 +369,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> clearAllUnreadNotifications() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/notifications/notifications/bulk-delete-unread/');
-    var response = await http.delete(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.delete('/api/notifications/notifications/bulk-delete-unread/');
     if (response.statusCode == 200) {
       setState(() {
         notifications.clear();

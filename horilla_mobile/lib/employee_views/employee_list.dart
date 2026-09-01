@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import '../core/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:shimmer/shimmer.dart';
@@ -70,7 +70,6 @@ class _EmployeeListPageState extends State<EmployeeListPage> {
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
@@ -78,7 +77,6 @@ class _EmployeeListPageState extends State<EmployeeListPage> {
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -86,14 +84,8 @@ class _EmployeeListPageState extends State<EmployeeListPage> {
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -133,14 +125,7 @@ class _EmployeeListPageState extends State<EmployeeListPage> {
 
   Future<void> getEmployeeDetails() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/employee/list/employees?page=$currentPage&search=$searchText');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/list/employees?page=$currentPage&search=$searchText');
     if (response.statusCode == 200) {
       setState(() {
         requests.addAll(
@@ -219,7 +204,7 @@ class _EmployeeListPageState extends State<EmployeeListPage> {
                       child: Image.network(
                         baseUrl + record['employee_profile'],
                         headers: {
-                          "Authorization": "Bearer $token",
+                          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                         },
                         fit: BoxFit.cover,
                         errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {

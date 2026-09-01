@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import '../core/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'leave_request.dart';
@@ -57,7 +57,6 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -72,13 +71,7 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> permissionLeaveOverviewChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-perm/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-perm/');
     if (response.statusCode == 200) {
       permissionLeaveOverviewCheck = true;
       permissionMyLeaveRequestCheck = true;
@@ -91,13 +84,7 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> permissionLeaveTypeChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-type/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-type/');
     if (response.statusCode == 200) {
       permissionLeaveTypeCheck = true;
       permissionMyLeaveRequestCheck = true;
@@ -110,13 +97,7 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> permissionLeaveRequestChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-request/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-request/');
     if (response.statusCode == 200) {
       permissionLeaveRequestCheck = true;
       permissionMyLeaveRequestCheck = true;
@@ -129,13 +110,7 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> permissionLeaveAssignChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-assign/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-assign/');
     if (response.statusCode == 200) {
       permissionLeaveAssignCheck = true;
       permissionMyLeaveRequestCheck = true;
@@ -148,7 +123,6 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
@@ -156,14 +130,8 @@ class _LeaveOverview extends State<LeaveOverview>
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -228,8 +196,6 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> getAllLeaveRequest() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var now = DateTime.now();
     var formattedDate =
         "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
@@ -243,7 +209,7 @@ class _LeaveOverview extends State<LeaveOverview>
         '$serverUrl/api/leave/request/?from_date=$formattedDate&to_date=$formattedDate&status=approved');
     var response = await http.get(uri, headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
+      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
     });
     if (response.statusCode == 200) {
       setState(() {
@@ -265,7 +231,7 @@ class _LeaveOverview extends State<LeaveOverview>
     var uri = Uri.parse('$serverUrl/api/leave/request');
     var response = await http.get(uri, headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
+      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
     });
 
     if (response.statusCode == 200) {
@@ -968,7 +934,7 @@ Widget buildLeaveTodayTile(BuildContext context, String fullName, String image,
                       child: Image.network(
                         baseUrl + image,
                         headers: {
-                          "Authorization": "Bearer $token",
+                          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                         },
                         fit: BoxFit.cover,
                         errorBuilder: (BuildContext context, Object exception,

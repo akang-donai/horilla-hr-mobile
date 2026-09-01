@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import '../core/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
@@ -129,7 +129,6 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -142,22 +141,14 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
   }
   void accessChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
     var employeeId = prefs.getInt("employee_id");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-    Uri.parse('$typedServerUrl/api/base/rotating-shift-create-permission-check/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/base/rotating-shift-create-permission-check/$employeeId');
     if (response.statusCode == 200) {
       accessCheck = true;
     }
@@ -165,14 +156,7 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   void permissionChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-    Uri.parse('$typedServerUrl/api/attendance/permission-check/attendance');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/attendance/permission-check/attendance');
     if (response.statusCode == 200) {
       permissionCheck = true;
     }
@@ -204,14 +188,8 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
       arguments = {
@@ -243,19 +221,12 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   Future<void> getRotatingShiftRequest() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     employeeId = widget.selectedEmployerId;
     setState(() {
       hasNoRecords = false;
     });
     if (currentPage != 0) {
-      var uri = Uri.parse(
-          '$typedServerUrl /api/base/individual-rotating-shifts?employee_id=$employeeId&page=$currentPage&search=$searchText');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+            var response = await ApiClient.instance.get('/api/base/individual-rotating-shifts?employee_id=$employeeId&page=$currentPage&search=$searchText');
       if (response.statusCode == 200) {
         setState(() {
           requests.addAll(
@@ -290,12 +261,7 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
       }
     } else {
       currentPage = 1;
-      var uri = Uri.parse(
-          '$typedServerUrl/api/base/rotating-shift-assigns?employee_id=$employeeId&search=$searchText');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+            var response = await ApiClient.instance.get('/api/base/rotating-shift-assigns?employee_id=$employeeId&search=$searchText');
       if (response.statusCode == 200) {
         setState(() {
           requests.addAll(
@@ -334,13 +300,7 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
   Future<void> getEmployeeDetails() async {
     employeeId = widget.selectedEmployerId;
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
     if (response.statusCode == 200) {
       setState(() {
         employeeDetails = jsonDecode(response.body);
@@ -353,13 +313,7 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   Future<void> getRotatingShift() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/base/rotating-shifts/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/base/rotating-shifts/');
     if (response.statusCode == 200) {
       List<dynamic> responseBody = jsonDecode(response.body);
 
@@ -376,18 +330,10 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   Future<void> getEmployees() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     allEmployeeList.clear();
 
     for (var page = 1;; page++) {
-      var uri = Uri.parse(
-          '$typedServerUrl/api/employee/employee-selector?page=$page');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+            var response = await ApiClient.instance.get('/api/employee/employee-selector?page=$page');
 
       if (response.statusCode == 200) {
         var responseBody = jsonDecode(response.body);
@@ -443,25 +389,14 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   Future<void> updateRotatingShift(Map<String, dynamic> updatedDetails) async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     String rotatingShiftId = updatedDetails['id'].toString();
-    var uri = Uri.parse(
-        '$typedServerUrl/api/base/rotating-shift-assigns/$rotatingShiftId/');
-    var response = await http.put(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+        var response = await ApiClient.instance.put('/api/base/rotating-shift-assigns/$rotatingShiftId/', jsonBody: jsonEncode({
         "employee_id": updatedDetails['employee_id'],
         "rotating_shift_id": updatedDetails['rotating_shift_id'],
         "start_date": updatedDetails['start_date'],
         "based_on": updatedDetails['based_on'],
         "rotate_after_day": updatedDetails['rotate_after_day'],
-      }),
-    );
+      }));
     if (response.statusCode == 200) {
       isSaveClick = false;
       _errorMessage = null;
@@ -501,23 +436,13 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
   Future<void> createRotatingShiftRequest(
       Map<String, dynamic> createdDetails) async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/base/rotating-shift-assigns/');
-    var response = await http.post(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+        var response = await ApiClient.instance.post('/api/base/rotating-shift-assigns/', jsonBody: jsonEncode({
         "employee_id": createdDetails['employee_id'],
         "rotating_shift_id": createdDetails['rotating_shift_id'],
         "start_date": createdDetails['start_date'],
         "based_on": createdDetails['based_on'],
         "rotate_after_day": createdDetails['rotate_after_day'],
-      }),
-    );
+      }));
     if (response.statusCode == 201) {
       isSaveClick = false;
       _errorMessage = null;
@@ -685,14 +610,7 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   Future<void> deleteRotatingShiftRequest(int requestId) async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/base/rotating-shift-assigns/$requestId/');
-    var response = await http.delete(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.delete('/api/base/rotating-shift-assigns/$requestId/');
     if (response.statusCode == 200) {
       setState(() {
         isSaveClick = false;
@@ -1626,7 +1544,7 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
                                         baseUrl +
                                             employeeDetails['employee_profile'],
                                         headers: {
-                                          "Authorization": "Bearer $token",
+                                          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                         },
                                         fit: BoxFit.cover,
                                         errorBuilder: (BuildContext context,
@@ -1837,7 +1755,7 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
                                     baseUrl +
                                         employeeDetails['employee_profile'],
                                     headers: {
-                                      "Authorization": "Bearer $token",
+                                      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                     },
                                     fit: BoxFit.cover,
                                     errorBuilder: (BuildContext context,

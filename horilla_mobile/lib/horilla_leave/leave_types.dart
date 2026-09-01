@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import '../core/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:shimmer/shimmer.dart';
@@ -62,7 +62,6 @@ class _LeaveTypes extends State<LeaveTypes> {
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -71,13 +70,7 @@ class _LeaveTypes extends State<LeaveTypes> {
 
   Future<void> permissionLeaveOverviewChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-perm/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-perm/');
     if (response.statusCode == 200) {
       permissionLeaveOverviewCheck = true;
       permissionMyLeaveRequestCheck = true;
@@ -90,13 +83,7 @@ class _LeaveTypes extends State<LeaveTypes> {
 
   Future<void> permissionLeaveTypeChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-type/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-type/');
     if (response.statusCode == 200) {
       permissionLeaveTypeCheck = true;
       permissionMyLeaveRequestCheck = true;
@@ -109,13 +96,7 @@ class _LeaveTypes extends State<LeaveTypes> {
 
   Future<void> permissionLeaveRequestChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-request/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-request/');
     if (response.statusCode == 200) {
       permissionLeaveRequestCheck = true;
       permissionMyLeaveRequestCheck = true;
@@ -128,13 +109,7 @@ class _LeaveTypes extends State<LeaveTypes> {
 
   Future<void> permissionLeaveAssignChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/check-assign/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/check-assign/');
     if (response.statusCode == 200) {
       permissionLeaveAssignCheck = true;
       permissionMyLeaveRequestCheck = true;
@@ -147,14 +122,8 @@ class _LeaveTypes extends State<LeaveTypes> {
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -187,7 +156,6 @@ class _LeaveTypes extends State<LeaveTypes> {
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
@@ -195,13 +163,7 @@ class _LeaveTypes extends State<LeaveTypes> {
 
   Future<void> getLeaveType() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/leave/leave-type/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/leave/leave-type/');
 
     if (response.statusCode == 200) {
       setState(() {
@@ -526,7 +488,7 @@ Widget buildListItem(
                       child: Image.network(
                         baseUrl + record['icon'],
                         headers: {
-                          "Authorization": "Bearer $token",
+                          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                         },
                         fit: BoxFit.cover,
                         errorBuilder: (BuildContext context, Object exception,

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import '../core/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
@@ -113,7 +113,6 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -141,7 +140,6 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
@@ -149,29 +147,15 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   void permissionChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-    Uri.parse('$typedServerUrl/api/attendance/permission-check/attendance');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/attendance/permission-check/attendance');
     if (response.statusCode == 200) {
       permissionCheck = true;
     }
   }
   void approveRejectChecks() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri =
-    Uri.parse('$typedServerUrl/api/base/worktype-request-approve-permission-check/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/base/worktype-request-approve-permission-check/$employeeId');
     if (response.statusCode == 200) {
       approveRejectCheck = true;
     }
@@ -203,14 +187,8 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
       arguments = {
@@ -242,19 +220,12 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   Future<void> getWorkTypeRequest() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     employeeId = widget.selectedEmployerId;
     setState(() {
       hasNoRecords = false;
     });
     if (currentPage != 0) {
-      var uri = Uri.parse(
-          '$typedServerUrl/api/base/individual-worktype-request?employee_id=$employeeId&page=$currentPage&search=$searchText');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+            var response = await ApiClient.instance.get('/api/base/individual-worktype-request?employee_id=$employeeId&page=$currentPage&search=$searchText');
       if (response.statusCode == 200) {
         setState(() {
           requests.addAll(
@@ -288,12 +259,7 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
       }
     } else {
       currentPage = 1;
-      var uri = Uri.parse(
-          '$typedServerUrl/api/base/worktype-requests?employee_id=$employeeId&search=$searchText');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+            var response = await ApiClient.instance.get('/api/base/worktype-requests?employee_id=$employeeId&search=$searchText');
       if (response.statusCode == 200) {
         setState(() {
           requests.addAll(
@@ -329,15 +295,8 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
   }
   Future<void> getEmployees() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/employee/employee-selector?employee_id=$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/employee-selector?employee_id=$employeeId');
 
     if (response.statusCode == 200) {
       setState(() {
@@ -375,15 +334,13 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   Future<void> addOvertime() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var uri =
     Uri.parse('$typedServerUrl/api/attendance/attendance-hour-account/');
     var response = await http.post(
       uri,
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
+        "Authorization": "Bearer ${ApiClient.instance.accessToken}",
       },
       body: jsonEncode({
         "employee_id": employeeIdValue[employeeIdValue.length - 1],
@@ -406,15 +363,8 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
   Future<void> rejectWorkTypeRequest(
       Map<String, dynamic> updatedDetails) async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     int requestId = updatedDetails['id'];
-    var uri = Uri.parse(
-        '$typedServerUrl/api/base/worktype-requests-cancel/$requestId/');
-    var response = await http.put(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.put('/api/base/worktype-requests-cancel/$requestId/');
     if (response.statusCode == 200) {
       setState(() async {
         isSaveClick = false;
@@ -428,15 +378,8 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
   Future<void> approveWorkTypeRequest(
       Map<String, dynamic> updatedDetails) async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     int requestId = updatedDetails['id'];
-    var uri = Uri.parse(
-        '$typedServerUrl/api/base/worktype-requests-approve/$requestId/');
-    var response = await http.put(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.put('/api/base/worktype-requests-approve/$requestId/');
     if (response.statusCode == 200) {
       setState(() async {
         isSaveClick = false;
@@ -474,13 +417,7 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   Future<void> getWorkType() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/base/worktypes');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/base/worktypes');
     if (response.statusCode == 200) {
       List<dynamic> workTypesData = jsonDecode(response.body);
       setState(() {
@@ -626,13 +563,7 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
   Future<void> getEmployeeDetails() async {
     employeeId = widget.selectedEmployerId;
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
     if (response.statusCode == 200) {
       setState(() {
         employeeDetails = jsonDecode(response.body);
@@ -643,25 +574,14 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
   Future<void> updateWorkTypeRequest(
       Map<String, dynamic> updatedDetails) async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     String workTypeRequestId = updatedDetails['id'].toString();
-    var uri = Uri.parse(
-        '$typedServerUrl/api/base/worktype-requests/$workTypeRequestId/');
-    var response = await http.put(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+        var response = await ApiClient.instance.put('/api/base/worktype-requests/$workTypeRequestId/', jsonBody: jsonEncode({
         "employee_id": updatedDetails['employee_id'],
         "requested_date": updatedDetails['requested_date'],
         "requested_till": updatedDetails['requested_till'],
         "description": updatedDetails['description'],
         "work_type_id": updatedDetails['work_type_id'],
-      }),
-    );
+      }));
     if (response.statusCode == 200) {
       isSaveClick = false;
       _errorMessage = null;
@@ -701,23 +621,13 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
   Future<void> createWorkTypeRequest(
       Map<String, dynamic> createdDetails) async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/base/worktype-requests/');
-    var response = await http.post(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+        var response = await ApiClient.instance.post('/api/base/worktype-requests/', jsonBody: jsonEncode({
         "employee_id": createdDetails['employee_id'],
         "requested_date": createdDetails['requested_date'],
         "requested_till": createdDetails['requested_till'],
         "description": createdDetails['description'],
         "work_type_id": createdDetails['work_type_id'],
-      }),
-    );
+      }));
     if (response.statusCode == 201) {
       isSaveClick = false;
       _errorMessage = null;
@@ -885,14 +795,7 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   Future<void> deleteWorkTypeRequest(int requestId) async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-    Uri.parse('$typedServerUrl/api/base/worktype-requests/$requestId/');
-    var response = await http.delete(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+        var response = await ApiClient.instance.delete('/api/base/worktype-requests/$requestId/');
     if (response.statusCode == 200) {
       setState(() {
         isSaveClick = false;
@@ -1763,7 +1666,7 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
                                         baseUrl +
                                             employeeDetails['employee_profile'],
                                         headers: {
-                                          "Authorization": "Bearer $token",
+                                          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                         },
                                         fit: BoxFit.cover,
                                         errorBuilder: (BuildContext context,
@@ -2460,7 +2363,7 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
                                     baseUrl +
                                         employeeDetails['employee_profile'],
                                     headers: {
-                                      "Authorization": "Bearer $token",
+                                      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                     },
                                     fit: BoxFit.cover,
                                     errorBuilder: (BuildContext context,
