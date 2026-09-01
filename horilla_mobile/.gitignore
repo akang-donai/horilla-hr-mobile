@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# iOS build artifacts
+**/ios/build/
+
+# Android release signing config
+/android/key.properties

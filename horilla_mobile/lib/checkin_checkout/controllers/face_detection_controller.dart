@@ -1,15 +1,12 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:developer';
 import 'package:camera/camera.dart';
-import 'package:flutter_face_api/flutter_face_api.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+// TODO: Task 11 will replace this file with google_mlkit_face_detection implementation
 class FaceScannerController {
   late CameraController cameraController;
   late CameraDescription selectedCamera;
-
-  var faceSdk = FaceSDK.instance;
 
   bool _isInitialized = false;
 
@@ -75,39 +72,9 @@ class FaceScannerController {
   }
 
   Future<bool> compareFaces(File capturedImageFile, String storedImageBase64) async {
-    try {
-      if (!await capturedImageFile.exists()) {
-        throw Exception('Captured image file not found at: ${capturedImageFile.path}');
-      }
-      final storedImageBytes = base64Decode(storedImageBase64);
-      if (storedImageBytes.isEmpty) {
-        throw Exception('Stored image bytes are empty');
-      }
-      final capturedImageBytes = await capturedImageFile.readAsBytes();
-      if (capturedImageBytes.isEmpty) {
-        throw Exception('Captured image bytes are empty');
-      }
-      log('Stored image size: ${storedImageBytes.length} bytes');
-      log('Captured image size: ${capturedImageBytes.length} bytes');
-
-      final storedFaceImage = MatchFacesImage(storedImageBytes, ImageType.PRINTED);
-      final capturedFaceImage = MatchFacesImage(capturedImageBytes, ImageType.LIVE);
-
-      final request = MatchFacesRequest([storedFaceImage, capturedFaceImage]);
-      final response = await faceSdk.matchFaces(request);
-      final split = await faceSdk.splitComparedFaces(response.results, 0.75);
-
-      if (split.matchedFaces.isNotEmpty) {
-        final similarity = split.matchedFaces[0].similarity;
-        log('Face comparison similarity: $similarity');
-        return similarity >= 0.80;
-      }
-      log('No matched faces found');
-      return false;
-    } catch (e, stack) {
-      log('Error in face comparison: $e\n$stack');
-      return false;
-    }
+    // TODO: Task 11 will implement face comparison with google_mlkit_face_detection
+    log('Face comparison not yet implemented - pending Task 11');
+    return false;
   }
 
   void dispose() {
