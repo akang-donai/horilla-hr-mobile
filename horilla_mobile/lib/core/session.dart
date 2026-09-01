@@ -27,10 +27,13 @@ class Session {
     if (refresh != null) await _secure.write(key: 'refresh', value: refresh);
   }
 
+  static const _sessionKeys = ['typed_url'];
+
   Future<void> clear() async {
-    await _secure.deleteAll();
+    await _secure.delete(key: 'access');
+    await _secure.delete(key: 'refresh');
     final prefs = await SharedPreferences.getInstance();
-    for (final k in prefs.getKeys().toList()) {
+    for (final k in _sessionKeys) {
       await prefs.remove(k);
     }
   }

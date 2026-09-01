@@ -97,7 +97,7 @@ class ApiClient {
       req.files.add(await http.MultipartFile.fromPath(e.key, e.value));
     }
     final res = await httpClient.send(req).timeout(_timeout);
-    if (res.statusCode == 401 && !retried) {
+    if (res.statusCode == 401 && !retried && !path.startsWith('/api/auth/')) {
       if (await _tryRefresh()) {
         return multipart(method, path,
             fields: fields, files: files, retried: true);
@@ -119,7 +119,9 @@ class ApiClient {
           .timeout(_timeout);
       if (res.statusCode != 200) return false;
       final data = jsonDecode(res.body) as Map<String, dynamic>;
-      _access = data['access'] as String?;
+      final newAccess = data['access'] as String?;
+      if (newAccess == null) return false;
+      _access = newAccess;
       final newRefresh = data['refresh'] as String?;
       if (newRefresh != null) _refresh = newRefresh;
       try {
