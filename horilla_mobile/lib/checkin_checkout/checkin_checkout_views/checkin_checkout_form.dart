@@ -1029,6 +1029,9 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
             } else if (result.errorCode == 'face_mismatch' && _faceAttempts < 3) {
               _faceAttempts++;
               showCheckInFailedDialog(context, result.message ?? 'Face verification failed. Try again.');
+            } else if (result.errorCode == 'outside_geofence') {
+              _faceAttempts = 0;
+              showCheckInFailedDialog(context, result.message ?? 'Outside allowed area');
             } else {
               _faceAttempts = 0;
               showCheckInFailedDialog(context, result.message ?? 'Clock action failed');

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,9 +48,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Timer? _notificationTimer;
   Set<int> seenNotificationIds = {};
   int currentPage = 0;
-  List<dynamic> responseDataLocation = [];
   final List<LocationWithRadius> locations = [];
-  LocationWithRadius? selectedLocation;
   late final AnimatedMapController _mapController;
   bool _isPermissionLoading = true;
   bool isAuthenticated = true;
@@ -483,38 +480,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> enableFaceDetection() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/facedetection/config/');
-    var response = await http.put(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
-        'start': true,
-      }),
+    var response = await ApiClient.instance.put(
+      '/api/facedetection/config/',
+      jsonBody: {'start': true},
     );
     print('Face Detection Enable Response: ${response.statusCode}');
     print(response.body);
   }
 
   Future<void> disableFaceDetection() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/facedetection/config/');
-    var response = await http.put(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
-        'start': false,
-      }),
+    var response = await ApiClient.instance.put(
+      '/api/facedetection/config/',
+      jsonBody: {'start': false},
     );
     print('Face Detection Disable Response: ${response.statusCode}');
   }
