@@ -520,169 +520,86 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<bool> getFaceDetection() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/facedetection/config/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
-    if (response.statusCode == 200) {
-      var data = jsonDecode(response.body);
-      bool isEnabled = data['start'] ?? false;
-      return isEnabled;
-    } else {
-      print('Failed to get face detection');
-      return false;
-    }
-  }
-
-
-  Future<bool?> getGeoFence() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/geofencing/setup/');
-
     try {
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
-
-      if (response.statusCode == 200 && response.body.isNotEmpty) {
+      var response = await ApiClient.instance.get('/api/facedetection/config/');
+      if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
         bool isEnabled = data['start'] ?? false;
         return isEnabled;
-      }
-      else if (response.statusCode == 404) {
-        print('Geofencing not configured yet');
-        return null;
-      }
-      else {
-        print('Failed to get geofencing: ${response.statusCode}');
+      } else {
+        print('Failed to get face detection');
         return false;
       }
     } catch (e) {
-      print('Error getting geofencing: $e');
+      print('Error getting face detection: $e');
       return false;
     }
   }
 
-
-  Future<void> enableGeoFenceLocation() async {
-    await getGeoFenceLocation();
-    if (responseDataLocation.isEmpty) return;
-    var locationId = responseDataLocation[0]['id'];
-    final prefs = await SharedPreferences.getInstance();
-    var companyId = prefs.getInt("company_id");
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/geofencing/setup/$locationId/');
-    var response = await http.put(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
-        'latitude': selectedLocation?.coordinates.latitude,
-        'longitude': selectedLocation?.coordinates.longitude,
-        'radius_in_meters': selectedLocation?.radius,
-        'start': true,
-        'company_id': companyId
-      }),
-    );
-    print('GeoFence Enable Response: ${response.statusCode}');
-  }
-
-  Future<void> disableGeoFenceLocation() async {
-    await getGeoFenceLocation();
-    if (responseDataLocation.isEmpty) return;
-
-    var locationId = responseDataLocation[0]['id'];
-    final prefs = await SharedPreferences.getInstance();
-    var companyId = prefs.getInt("company_id");
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/geofencing/setup/$locationId/');
-    var response = await http.put(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
-        'latitude': selectedLocation?.coordinates.latitude,
-        'longitude': selectedLocation?.coordinates.longitude,
-        'radius_in_meters': selectedLocation?.radius,
-        'start': false,
-        'company_id': companyId
-      }),
-    );
-    print('GeoFence Disable Response: ${response.statusCode}');
-  }
-
-  Future<void> getGeoFenceLocation() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/geofencing/setup/');
-
+  Future<Map<String, dynamic>?> getGeoFenceConfig() async {
     try {
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is Map && data.isNotEmpty) {
-          final lat = data['latitude'];
-          final lng = data['longitude'];
-          final rad = data['radius_in_meters'];
-
-          if (lat != null && lng != null && rad != null) {
-            final locationName = await _getLocationName(lat, lng);
-            final location = LocationWithRadius(
-              LatLng(lat, lng),
-              locationName,
-              (rad).toDouble(),
-            );
-
-            setState(() {
-              responseDataLocation = [data];
-              locations.clear();
-              locations.add(location);
-              selectedLocation = location;
-              _mapController.animateTo(dest: location.coordinates, zoom: 12.0);
-            });
-            print('responseDataLocation: $responseDataLocation');
-          }
-        }
+      var response = await ApiClient.instance.get('/api/geofencing/setup/');
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        var data = jsonDecode(response.body);
+        return data;
+      } else if (response.statusCode == 404) {
+        print('Geofencing not configured yet');
+        return null;
       } else {
-        print('Failed to load geofence data: ${response.statusCode}');
+        print('Failed to get geofencing: ${response.statusCode}');
+        return null;
       }
     } catch (e) {
-      print("Error fetching geofence data: $e");
+      print('Error getting geofencing: $e');
+      return null;
     }
   }
 
+  Future<void> enableGeoFenceLocation() async {
+    final config = await getGeoFenceConfig();
+    if (config == null) return;
+    var locationId = config['id'];
+    final prefs = await SharedPreferences.getInstance();
+    var companyId = prefs.getInt("company_id");
 
-  Future<String> _getLocationName(double latitude, double longitude) async {
     try {
-      List<Placemark> placemarks =
-      await placemarkFromCoordinates(latitude, longitude);
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
-        String name = "${place.locality ?? ''}, ${place.country ?? ''}".trim();
-        return name.isEmpty ? "Unknown Location" : name;
-      }
-      return "Unknown Location";
+      var response = await ApiClient.instance.put(
+        '/api/geofencing/setup/$locationId/',
+        jsonBody: {
+          'latitude': config['latitude'],
+          'longitude': config['longitude'],
+          'radius_in_meters': config['radius_in_meters'],
+          'start': true,
+          'company_id': companyId
+        },
+      );
+      print('GeoFence Enable Response: ${response.statusCode}');
     } catch (e) {
-      print('Error getting location name: $e');
-      return "Unknown Location";
+      print('Error enabling geofence: $e');
+    }
+  }
+
+  Future<void> disableGeoFenceLocation() async {
+    final config = await getGeoFenceConfig();
+    if (config == null) return;
+    var locationId = config['id'];
+    final prefs = await SharedPreferences.getInstance();
+    var companyId = prefs.getInt("company_id");
+
+    try {
+      var response = await ApiClient.instance.put(
+        '/api/geofencing/setup/$locationId/',
+        jsonBody: {
+          'latitude': config['latitude'],
+          'longitude': config['longitude'],
+          'radius_in_meters': config['radius_in_meters'],
+          'start': false,
+          'company_id': companyId
+        },
+      );
+      print('GeoFence Disable Response: ${response.statusCode}');
+    } catch (e) {
+      print('Error disabling geofence: $e');
     }
   }
 
@@ -1079,11 +996,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
                 onPressed: () async {
                   var faceDetection = await getFaceDetection();
-                  var geoFencingResponse = await getGeoFence();
+                  var geoFencingConfig = await getGeoFenceConfig();
                   final prefs = await SharedPreferences.getInstance();
 
-                  bool geoFencingSetupExists = geoFencingResponse != null;
-                  bool geoFencingEnabled = geoFencingSetupExists ? geoFencingResponse : false;
+                  bool geoFencingSetupExists = geoFencingConfig != null;
+                  bool geoFencingEnabled = geoFencingSetupExists ? (geoFencingConfig['start'] ?? false) : false;
 
                   prefs.remove('face_detection');
                   prefs.setBool("face_detection", faceDetection);

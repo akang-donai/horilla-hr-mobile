@@ -13,6 +13,8 @@ import 'attendance_views/attendance_request.dart';
 import 'attendance_views/hour_account.dart';
 import 'attendance_views/my_attendance_view.dart';
 import 'checkin_checkout/checkin_checkout_views/checkin_checkout_form.dart';
+import 'package:camera/camera.dart';
+import 'checkin_checkout/checkin_checkout_views/setup_imageface.dart';
 import 'employee_views/employee_form.dart';
 import 'employee_views/employee_list.dart';
 import 'horilla_leave/all_assigned_leave.dart';
@@ -32,7 +34,6 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-// var faceSdk = FaceSDK.instance;
 int currentPage = 1;
 bool isFirstFetch = true;
 Set<int> seenNotificationIds = {};
@@ -76,7 +77,6 @@ void _startNotificationTimer() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await faceSdk.initialize();
 
   const AndroidInitializationSettings initializationSettingsAndroid =
   AndroidInitializationSettings('@mipmap/horilla_logo');
@@ -307,6 +307,7 @@ class LoginApp extends StatelessWidget {
         '/my_attendance_view': (context) => MyAttendanceViews(),
         '/employee_hour_account': (context) => HourAccountFormPage(),
         '/employee_checkin_checkout': (context) => CheckInCheckOutFormPage(),
+        '/setup_imageface': (context) => _CameraLoader(),
         '/leave_overview': (context) => LeaveOverview(),
         '/leave_types': (context) => LeaveTypes(),
         '/my_leave_request': (context) => MyLeaveRequest(),
@@ -337,6 +338,36 @@ class SplashScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CameraLoader extends StatefulWidget {
+  @override
+  State<_CameraLoader> createState() => _CameraLoaderState();
+}
+
+class _CameraLoaderState extends State<_CameraLoader> {
+  @override
+  void initState() {
+    super.initState();
+    _loadCameras();
+  }
+
+  Future<void> _loadCameras() async {
+    final cameras = await availableCameras();
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => CameraSetupPage(cameras: cameras)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
     );
   }
 }

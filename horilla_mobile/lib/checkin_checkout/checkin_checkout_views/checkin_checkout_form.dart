@@ -9,10 +9,10 @@ import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_not
 import 'package:shimmer/shimmer.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/api_client.dart';
+import '../../core/clock_service.dart';
 import '../../horilla_main/home.dart';
-import 'face_detection.dart';
+import 'face_capture_screen.dart';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
 
 
 
@@ -60,6 +60,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
   bool _locationSnackBarShown = false;
   bool _locationUnavailableSnackBarShown = false;
   late String getToken = '';
+  int _faceAttempts = 0;
 
 
 
@@ -433,43 +434,6 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
     await prefs.clear();
   }
 
-  String getErrorMessage(String responseBody) {
-    try {
-      final Map<String, dynamic> decoded = json.decode(responseBody);
-      return decoded['message'] ?? 'Unknown error occurred';
-    } catch (e) {
-      return 'Error parsing server response';
-    }
-  }
-
-  Future<void> postCheckout() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/attendance/clock-out/');
-    var response = await http.post(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
-    if (response.statusCode == 200) {
-      setState(() {});
-    }
-  }
-
-  Future<void> postCheckIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/attendance/clock-in/');
-    var response = await http.post(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
-    if (response.statusCode == 200) {
-      setState(() {});
-    }
-  }
-
   void showCheckInFailedDialog(BuildContext context, String errorMessage) {
     showDialog(
       context: context,
@@ -493,6 +457,46 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
     );
   }
 
+  void _applyClockSuccess({required bool checkedIn}) {
+    setState(() {
+      if (checkedIn) {
+        isCheckIn = true;
+        clockCheckedIn = true;
+        clockCheckBool = true;
+        DateTime now = DateTime.now();
+        checkInFormattedTime = DateFormat('h:mm a').format(now);
+        checkInFormattedTimeTopR = DateFormat('h:mm').format(now);
+        _saveClockState(clockCheckedIn, 1, checkInFormattedTime.toString());
+
+        if (duration?.isNotEmpty ?? false) {
+          try {
+            List<String> parts = duration!.split(':');
+            if (parts.length == 3) {
+              int hours = int.parse(parts[0]);
+              int minutes = int.parse(parts[1]);
+              int seconds = int.parse(parts[2]);
+              Duration initialElapsedTime = Duration(
+                  hours: hours, minutes: minutes, seconds: seconds);
+              stopwatchManager.startStopwatch(initialTime: initialElapsedTime);
+            }
+          } catch (e) {}
+        }
+        swipeDirection = 'Swipe to Check-out';
+      } else {
+        isCheckIn = false;
+        clockCheckedIn = false;
+        stopwatchManager.stopStopwatch();
+        storeCheckoutTime();
+        Duration initialElapsedTime = stopwatchManager.elapsed;
+        workingTime = formatDuration(initialElapsedTime);
+        clockCheckBool = false;
+        DateTime now = DateTime.now();
+        checkOutFormattedTime = DateFormat('h:mm a').format(now);
+        swipeDirection = 'Swipe to Check-In';
+        _saveClockState(clockCheckedIn, 2, checkOutFormattedTime.toString());
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -993,254 +997,43 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
         SizedBox(height: MediaQuery.of(context).size.height * 0.02),
         GestureDetector(
           onPanUpdate: (details) async {
-            if (!_isProcessingDrag) {
-              final prefs = await SharedPreferences.getInstance();
-              var face_detection = prefs.getBool("face_detection");
-              var geo_fencing = prefs.getBool("geo_fencing");
-              if (face_detection == true) {
-                if (details.delta.dx.abs() > details.delta.dy.abs() && details.delta.dx.abs() > 10) {
-                  _isProcessingDrag = true;
-                  if (userLocation == null) {
-                    if (!_locationUnavailableSnackBarShown && geo_fencing == true) {
-                      _locationUnavailableSnackBarShown = true;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Location unavailable. Cannot proceed.')),
-                      );
-                    }
-                    _isProcessingDrag = false;
-                  }
-                  if (details.delta.dx < 0 && clockCheckedIn) {
-                    // Check-out
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => FaceScanner(
-                          userLocation: userLocation,
-                          userDetails: arguments,
-                          attendanceState: 'CHECKED_IN',
-                        ),
-                      ),
-                    );
-                    if (result != null && result['checkedOut'] == true) {
-                      setState(() {
-                        isCheckIn = false;
-                        clockCheckedIn = false;
-                        stopwatchManager.stopStopwatch();
-                        storeCheckoutTime();
-                        Duration initialElapsedTime = stopwatchManager.elapsed;
-                        workingTime = formatDuration(initialElapsedTime);
-                        clockCheckBool = false;
-                        DateTime now = DateTime.now();
-                        checkOutFormattedTime = DateFormat('h:mm a').format(now);
-                        swipeDirection = 'Swipe to Check-In';
-                        _saveClockState(
-                            clockCheckedIn, 2, checkOutFormattedTime.toString());
-                      });
-                    }
-                  } else if (details.delta.dx > 0 && !clockCheckedIn) {
-                    // Check-in
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => FaceScanner(
-                          userLocation: userLocation,
-                          userDetails: arguments,
-                          attendanceState: 'NOT_CHECKED_IN',
-                        ),
-                      ),
-                    );
-                    if (result != null && result['checkedIn'] == true) {
-                      setState(() {
-                        isCheckIn = true;
-                        clockCheckedIn = true;
-                        clockCheckBool = true;
-                        DateTime now = DateTime.now();
-                        checkInFormattedTime = DateFormat('h:mm a').format(now);
-                        checkInFormattedTimeTopR = DateFormat('h:mm').format(now);
-                        _saveClockState(
-                            clockCheckedIn, 1, checkInFormattedTime.toString());
+            if (_isProcessingDrag) return;
+            if (details.delta.dx.abs() <= details.delta.dy.abs() || details.delta.dx.abs() <= 10) return;
 
-                        if (duration?.isNotEmpty ?? false) {
-                          String durationString = duration.toString();
-
-                          try {
-                            List<String> parts = durationString.split(':');
-                            if (parts.length == 3) {
-                              int hours = int.parse(parts[0]);
-                              int minutes = int.parse(parts[1]);
-                              int seconds = int.parse(parts[2]);
-                              Duration initialElapsedTime = Duration(
-                                  hours: hours, minutes: minutes, seconds: seconds);
-                              stopwatchManager.startStopwatch(
-                                  initialTime: initialElapsedTime);
-                            }
-                          } catch (e) {}
-                        } else {}
-
-                        swipeDirection = 'Swipe to Check-out';
-                      });
-                    }
-                  }
-                }
-              }
-              else if (geo_fencing == true) {
-                if (details.delta.dx.abs() > details.delta.dy.abs() && details.delta.dx.abs() > 10) {
-                  _isProcessingDrag = true;
-                  if (userLocation == null) {
-                    if (!_locationUnavailableSnackBarShown) {
-                      _locationUnavailableSnackBarShown = true;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Location unavailable. Cannot proceed.')),
-                      );
-                    }
-                    _isProcessingDrag = false;
-                    return;
-                  }
-
-                  if (details.delta.dx < 0 && clockCheckedIn) {
-                    final prefs = await SharedPreferences.getInstance();
-                    var token = prefs.getString("token");
-                    var typedServerUrl = prefs.getString("typed_url");
-                    var geo_fencing = prefs.getBool("geo_fencing");
-                    var uri = Uri.parse('$typedServerUrl/api/attendance/clock-out/');
-                    var response_geofence = await http.post(
-                      uri,
-                      headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer $token",
-                      },
-                      body: jsonEncode({
-                        "latitude": userLocation!.latitude,
-                        "longitude": userLocation!.longitude,
-                      }),
-                    );
-
-                    if (response_geofence.statusCode == 200) {
-                      setState(() {
-                        isCheckIn = false;
-                        clockCheckedIn = false;
-                        stopwatchManager.stopStopwatch();
-                        storeCheckoutTime();
-                        clockCheckBool = false;
-                        DateTime now = DateTime.now();
-                        checkOutFormattedTime = DateFormat('h:mm a').format(now);
-                        swipeDirection = 'Swipe to Check-In';
-                        _saveClockState(clockCheckedIn, 2, checkOutFormattedTime.toString());
-                      });
-                    } else {
-                      String errorMessage = getErrorMessage(response_geofence.body);
-                      showCheckInFailedDialog(context, errorMessage);
-                    }
-                  } else if (details.delta.dx > 0 && !clockCheckedIn) {
-                    final prefs = await SharedPreferences.getInstance();
-                    var token = prefs.getString("token");
-                    var typedServerUrl = prefs.getString("typed_url");
-                    var geo_fencing = prefs.getBool("geo_fencing");
-                    var uri = Uri.parse('$typedServerUrl/api/attendance/clock-in/');
-                    var response_geofence = await http.post(
-                      uri,
-                      headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer $token",
-                      },
-                      body: jsonEncode({
-                        "latitude": userLocation!.latitude,
-                        "longitude": userLocation!.longitude,
-                      }),
-                    );
-
-                    if (response_geofence.statusCode == 200) {
-                      setState(() {
-                        isCheckIn = true;
-                        clockCheckedIn = true;
-                        clockCheckBool = true;
-                        DateTime now = DateTime.now();
-                        checkInFormattedTime = DateFormat('h:mm a').format(now);
-                        checkInFormattedTimeTopR = DateFormat('h:mm').format(now);
-                        _saveClockState(
-                            clockCheckedIn, 1, checkInFormattedTime.toString());
-
-                        if (duration?.isNotEmpty ?? false) {
-                          String durationString = duration.toString();
-
-                          try {
-                            List<String> parts = durationString.split(':');
-                            if (parts.length == 3) {
-                              int hours = int.parse(parts[0]);
-                              int minutes = int.parse(parts[1]);
-                              int seconds = int.parse(parts[2]);
-                              Duration initialElapsedTime = Duration(
-                                  hours: hours, minutes: minutes, seconds: seconds);
-                              stopwatchManager.startStopwatch(
-                                  initialTime: initialElapsedTime);
-                            }
-                          } catch (e) {}
-                        } else {}
-
-                        swipeDirection = 'Swipe to Check-out';
-                      });
-                    } else {
-                      String errorMessage = getErrorMessage(response_geofence.body);
-                      showCheckInFailedDialog(context, errorMessage);
-                    }
-                  }
-                }
-              }
-              else {
-                if (details.delta.dx.abs() > details.delta.dy.abs() &&
-                    details.delta.dx.abs() > 10) {
-                  _isProcessingDrag = true;
-                  if (details.delta.dx < 0) {
-                    setState(() {
-                      postCheckout();
-                      isCheckIn = false;
-                      clockCheckedIn = false;
-                      stopwatchManager.stopStopwatch();
-                      storeCheckoutTime();
-                      Duration initialElapsedTime = stopwatchManager.elapsed;
-                      workingTime = formatDuration(initialElapsedTime);
-                      clockCheckBool = false;
-                      DateTime now = DateTime.now();
-                      checkOutFormattedTime = DateFormat('h:mm a').format(now);
-                      swipeDirection = 'Swipe to Check-In';
-                      _saveClockState(
-                          clockCheckedIn, 2, checkOutFormattedTime.toString());
-                    });
-                  } else if (details.delta.dx > 0) {
-                    setState(() {
-                      postCheckIn();
-                      isCheckIn = true;
-                      clockCheckedIn = true;
-                      clockCheckBool = true;
-                      DateTime now = DateTime.now();
-                      checkInFormattedTime = DateFormat('h:mm a').format(now);
-                      checkInFormattedTimeTopR = DateFormat('h:mm').format(now);
-                      _saveClockState(
-                          clockCheckedIn, 1, checkInFormattedTime.toString());
-
-                      if (duration?.isNotEmpty ?? false) {
-                        String durationString = duration.toString();
-
-                        try {
-                          List<String> parts = durationString.split(':');
-                          if (parts.length == 3) {
-                            int hours = int.parse(parts[0]);
-                            int minutes = int.parse(parts[1]);
-                            int seconds = int.parse(parts[2]);
-                            Duration initialElapsedTime = Duration(
-                                hours: hours, minutes: minutes, seconds: seconds);
-                            stopwatchManager.startStopwatch(
-                                initialTime: initialElapsedTime);
-                          }
-                        } catch (e) {}
-                      } else {}
-
-                      swipeDirection = 'Swipe to Check-out';
-                    });
-                  }
-                }
-              }
+            _isProcessingDrag = true;
+            final bool checkingIn = details.delta.dx > 0;
+            if (checkingIn && clockCheckedIn) {
+              _isProcessingDrag = false;
+              return;
             }
+            if (!checkingIn && !clockCheckedIn) {
+              _isProcessingDrag = false;
+              return;
+            }
+
+            final selfiePath = await Navigator.push<String>(
+              context,
+              MaterialPageRoute(builder: (_) => const FaceCaptureScreen()),
+            );
+            if (selfiePath == null) {
+              _isProcessingDrag = false;
+              return;
+            }
+
+            final result = await clockAction(checkIn: checkingIn, selfiePath: selfiePath);
+            if (result.ok) {
+              _faceAttempts = 0;
+              _applyClockSuccess(checkedIn: checkingIn);
+            } else if (result.errorCode == 'not_enrolled') {
+              Navigator.pushNamed(context, '/setup_imageface');
+            } else if (result.errorCode == 'face_mismatch' && _faceAttempts < 3) {
+              _faceAttempts++;
+              showCheckInFailedDialog(context, result.message ?? 'Face verification failed. Try again.');
+            } else {
+              _faceAttempts = 0;
+              showCheckInFailedDialog(context, result.message ?? 'Clock action failed');
+            }
+            _isProcessingDrag = false;
           },
           onPanEnd: (details) {
             _isProcessingDrag = false;
