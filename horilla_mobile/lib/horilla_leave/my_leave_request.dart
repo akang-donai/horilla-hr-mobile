@@ -167,6 +167,7 @@ class _MyLeaveRequest extends State<MyLeaveRequest>
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
+    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -234,12 +235,8 @@ class _MyLeaveRequest extends State<MyLeaveRequest>
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var typedServerurl =    var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerurl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
-    });
+    var employeeId = prefs.getInt("employee_id");
+    var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -280,6 +277,7 @@ class _MyLeaveRequest extends State<MyLeaveRequest>
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
+    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
@@ -304,13 +302,7 @@ class _MyLeaveRequest extends State<MyLeaveRequest>
     isFetching = true;
 
     final prefs = await SharedPreferences.getInstance();
-    final uri = Uri.parse(
-        '$typedServerUrl/api/leave/user-request?employee_id=$employeeId&page=$page');
-
-    final response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
-    });
+    final response = await ApiClient.instance.get('/api/leave/user-request?employee_id=$employeeId&page=$page');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -357,12 +349,8 @@ class _MyLeaveRequest extends State<MyLeaveRequest>
 
   Future<void> getCurrentEmployeeDetails() async {
     final prefs = await SharedPreferences.getInstance();
-    var typedServerurl =    var employeeID = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerurl/api/employee/employees/$employeeID');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
-    });
+    var employeeID = prefs.getInt("employee_id");
+    var response = await ApiClient.instance.get('/api/employee/employees/$employeeID');
     if (response.statusCode == 200) {
       setState(() {
         var employeeData = jsonDecode(response.body);
@@ -2076,25 +2064,20 @@ class _MyLeaveRequest extends State<MyLeaveRequest>
       if (leaveType['name'] == createdDetails['leave_type']) {
       }
     }
-    var request = http.MultipartRequest(
-        'POST', Uri.parse('$typedServerUrl/api/leave/user-request/'));
-    request.fields['employee_id'] = employeeId.toString();
-    request.fields['description'] = createdDetails['description'];
-    request.fields['end_date_breakdown'] =
-    createdDetails['end_date_breakdown'];
-    request.fields['start_date_breakdown'] =
-    createdDetails['start_date_breakdown'];
-    request.fields['start_date'] = createdDetails['start_date'];
-    request.fields['end_date'] = createdDetails['end_date'];
-    request.fields['leave_type_id'] =
-        createdDetails['leave_type_id'].toString();
-    if (checkfile) {
-      var attachment =
-      await http.MultipartFile.fromPath('attachment', filePath);
-      request.files.add(attachment);
-    }
-    // Auth handled by ApiClient
-    var response = await request.send();
+    var response = await ApiClient.instance.multipart(
+      'POST',
+      '/api/leave/user-request/',
+      fields: {
+        'employee_id': employeeId.toString(),
+        'description': createdDetails['description'],
+        'end_date_breakdown': createdDetails['end_date_breakdown'],
+        'start_date_breakdown': createdDetails['start_date_breakdown'],
+        'start_date': createdDetails['start_date'],
+        'end_date': createdDetails['end_date'],
+        'leave_type_id': createdDetails['leave_type_id'].toString(),
+      },
+      files: checkfile ? {'attachment': filePath} : {},
+    );
     if (response.statusCode == 201) {
       isSaveClick = false;
       _errorMessage = null;
@@ -2154,25 +2137,19 @@ class _MyLeaveRequest extends State<MyLeaveRequest>
       String fileName, String filePath) async {
     final prefs = await SharedPreferences.getInstance();
     var itemId = updatedDetails['id'];
-    var request = http.MultipartRequest(
-        'PUT', Uri.parse('$typedServerUrl/api/leave/user-request/$itemId/'));
-    request.fields['description'] = updatedDetails['description'];
-    request.fields['end_date_breakdown'] = updatedDetails['end_date_breakdown'];
-    request.fields['start_date_breakdown'] =
-    updatedDetails['start_date_breakdown'];
-    request.fields['start_date'] = updatedDetails['start_date'];
-    request.fields['end_date'] = updatedDetails['end_date'];
-    request.fields['leave_type_id'] =
-        updatedDetails['leave_type_id']?.toString() ?? '';
-
-    if (checkfile) {
-      var attachment =
-      await http.MultipartFile.fromPath('attachment', filePath);
-      request.files.add(attachment);
-    }
-    // Auth handled by ApiClient
-
-    var response = await request.send();
+    var response = await ApiClient.instance.multipart(
+      'PUT',
+      '/api/leave/user-request/$itemId/',
+      fields: {
+        'description': updatedDetails['description'],
+        'end_date_breakdown': updatedDetails['end_date_breakdown'],
+        'start_date_breakdown': updatedDetails['start_date_breakdown'],
+        'start_date': updatedDetails['start_date'],
+        'end_date': updatedDetails['end_date'],
+        'leave_type_id': updatedDetails['leave_type_id']?.toString() ?? '',
+      },
+      files: checkfile ? {'attachment': filePath} : {},
+    );
     if (response.statusCode == 201) {
       isSaveClick = false;
       _errorMessage = null;

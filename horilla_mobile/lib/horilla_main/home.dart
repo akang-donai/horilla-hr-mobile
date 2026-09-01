@@ -5,7 +5,6 @@ import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -340,11 +339,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final prefs = await SharedPreferences.getInstance();
     Future<bool> _getPerm(String endpoint) async {
       try {
-        var uri = Uri.parse('$typedServerUrl$endpoint');
-        var res = await http.get(uri, headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
-        });
+        var res = await ApiClient.instance.get(endpoint);
         return res.statusCode == 200;
       } catch (e) {
         print("Permission check failed for $endpoint: $e");

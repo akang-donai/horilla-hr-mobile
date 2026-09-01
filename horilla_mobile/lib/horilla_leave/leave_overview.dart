@@ -57,6 +57,7 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
+    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -123,6 +124,7 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
+    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
@@ -196,6 +198,8 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> getAllLeaveRequest() async {
     final prefs = await SharedPreferences.getInstance();
+    var typedServerUrl = prefs.getString('typed_url');
+    var token = prefs.getString('token');
     var now = DateTime.now();
     var formattedDate =
         "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
@@ -205,12 +209,7 @@ class _LeaveOverview extends State<LeaveOverview>
 
   Future<void> fetchApprovedRequests(String serverUrl, String token,
       String formattedDate, DateTime now) async {
-    var uri = Uri.parse(
-        '$serverUrl/api/leave/request/?from_date=$formattedDate&to_date=$formattedDate&status=approved');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
-    });
+    var response = await ApiClient.instance.get('/api/leave/request/?from_date=$formattedDate&to_date=$formattedDate&status=approved');
     if (response.statusCode == 200) {
       setState(() {
         var allRequests = List<Map<String, dynamic>>.from(
@@ -228,11 +227,7 @@ class _LeaveOverview extends State<LeaveOverview>
   }
 
   Future<void> fetchAllRequests(String serverUrl, String token) async {
-    var uri = Uri.parse('$serverUrl/api/leave/request');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
-    });
+    var response = await ApiClient.instance.get('/api/leave/request');
 
     if (response.statusCode == 200) {
       setState(() {

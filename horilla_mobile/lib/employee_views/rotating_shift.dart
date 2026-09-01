@@ -129,6 +129,7 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
+    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -141,6 +142,7 @@ class _WorkTypeRequestPageState extends State<RotatingShiftPage> {
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
+    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });

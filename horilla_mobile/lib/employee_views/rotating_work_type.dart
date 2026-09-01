@@ -116,6 +116,7 @@ class _RotatingWorkTypePageState extends State<RotatingWorkTypePage> {
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
+    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -123,6 +124,7 @@ class _RotatingWorkTypePageState extends State<RotatingWorkTypePage> {
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
+    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });

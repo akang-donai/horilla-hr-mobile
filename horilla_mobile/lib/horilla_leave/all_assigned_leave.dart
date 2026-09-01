@@ -72,6 +72,7 @@ class _AllAssignedLeave extends State<AllAssignedLeave> {
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
+    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -179,6 +180,7 @@ class _AllAssignedLeave extends State<AllAssignedLeave> {
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
+    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
@@ -484,6 +486,8 @@ class _AllAssignedLeave extends State<AllAssignedLeave> {
   Future<void> createAssignedLeaveType(
       selectedEmployeeIds, selectedLeaveIds) async {
     final prefs = await SharedPreferences.getInstance();
+    var typedServerUrl = prefs.getString("typed_url");
+    var token = prefs.getString("token");
     for (var leave in selectedLeaveIds) {
       var uri = Uri.parse('$typedServerUrl/api/leave/assign-leave/');
       for (var allLeave in allLeaveList) {
@@ -493,13 +497,7 @@ class _AllAssignedLeave extends State<AllAssignedLeave> {
             "employee_ids": selectedEmployeeIds,
             "leave_type_ids": [leaveId],
           });
-
-          var response = await http.post(uri,
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer ${ApiClient.instance.accessToken}",
-              },
-              body: body);
+                    var response = await ApiClient.instance.post('/api/leave/assign-leave/?leave_type_id=$leaveId', jsonBody: jsonDecode(body));
         }
       }
     }

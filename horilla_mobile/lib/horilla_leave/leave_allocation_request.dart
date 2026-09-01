@@ -126,6 +126,7 @@ class _LeaveAllocationRequest extends State<LeaveAllocationRequest>
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
+    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -276,6 +277,7 @@ class _LeaveAllocationRequest extends State<LeaveAllocationRequest>
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
+    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
@@ -532,22 +534,17 @@ class _LeaveAllocationRequest extends State<LeaveAllocationRequest>
     for (var leaveType in leaveType) {
       if (leaveType['name'] == updatedDetails['leave_type']) {}
     }
-    var request = http.MultipartRequest('PUT',
-        Uri.parse('$typedServerUrl/api/leave/allocation-request/$itemId/'));
-    request.fields['description'] = updatedDetails['description'];
-    request.fields['requested_days'] = updatedDetails['requested_days'];
-    request.fields['leave_type_id'] =
-        updatedDetails['leave_type_id'].toString();
-    request.fields['employee_id'] = updatedDetails['employee_id'].toString();
-    if (checkFile) {
-      var attachment =
-      await http.MultipartFile.fromPath('attachment', filePath);
-      request.files.add(attachment);
-    }
-
-    // Auth handled by ApiClient
-
-    var response = await request.send();
+    var response = await ApiClient.instance.multipart(
+      'PUT',
+      '/api/leave/allocation-request/$itemId/',
+      fields: {
+        'description': updatedDetails['description'],
+        'requested_days': updatedDetails['requested_days'],
+        'leave_type_id': updatedDetails['leave_type_id'].toString(),
+        'employee_id': updatedDetails['employee_id'].toString(),
+      },
+      files: checkFile ? {'attachment': filePath} : {},
+    );
 
     if (response.statusCode == 201) {
       isSaveClick = false;
@@ -621,22 +618,17 @@ class _LeaveAllocationRequest extends State<LeaveAllocationRequest>
     var itemId = updatedDetails['id'];
     var employeeID = prefs.getInt("employee_id");
 
-    var request = http.MultipartRequest('PUT',
-        Uri.parse('$typedServerUrl/api/leave/user-allocation-request/$itemId/'));
-    request.fields['description'] = updatedDetails['description'];
-    request.fields['requested_days'] = updatedDetails['requested_days'];
-    request.fields['leave_type_id'] =
-        updatedDetails['leave_type_id'].toString();
-    request.fields['employee_id'] = employeeID.toString();
-
-    if (checkFile) {
-      var attachment =
-      await http.MultipartFile.fromPath('attachment', filePath);
-      request.files.add(attachment);
-    }
-
-    // Auth handled by ApiClient
-    var response = await request.send();
+    var response = await ApiClient.instance.multipart(
+      'PUT',
+      '/api/leave/user-allocation-request/$itemId/',
+      fields: {
+        'description': updatedDetails['description'],
+        'requested_days': updatedDetails['requested_days'],
+        'leave_type_id': updatedDetails['leave_type_id'].toString(),
+        'employee_id': employeeID.toString(),
+      },
+      files: checkFile ? {'attachment': filePath} : {},
+    );
 
     if (response.statusCode == 201) {
       isSaveClick = false;
@@ -1541,20 +1533,17 @@ class _LeaveAllocationRequest extends State<LeaveAllocationRequest>
   Future<void> createLeaveRequest(Map<String, dynamic> createdDetails,
       checkFile, String fileName, String filePath) async {
     final prefs = await SharedPreferences.getInstance();
-    var request = http.MultipartRequest(
-        'POST', Uri.parse('$typedServerUrl/api/leave/allocation-request/'));
-    request.fields['description'] = createdDetails['description'];
-    request.fields['leave_type_id'] =
-        createdDetails['leave_type_id'].toString();
-    request.fields['employee_id'] = createdDetails['employee_id'].toString();
-    request.fields['requested_days'] = createdDetails['requested_days'];
-    if (checkFile) {
-      var attachment =
-      await http.MultipartFile.fromPath('attachment', filePath);
-      request.files.add(attachment);
-    }
-    // Auth handled by ApiClient
-    var response = await request.send();
+    var response = await ApiClient.instance.multipart(
+      'POST',
+      '/api/leave/allocation-request/',
+      fields: {
+        'description': createdDetails['description'],
+        'leave_type_id': createdDetails['leave_type_id'].toString(),
+        'employee_id': createdDetails['employee_id'].toString(),
+        'requested_days': createdDetails['requested_days'],
+      },
+      files: checkFile ? {'attachment': filePath} : {},
+    );
     if (response.statusCode == 201) {
       isSaveClick = false;
       _errorMessage = null;
@@ -1590,12 +1579,7 @@ class _LeaveAllocationRequest extends State<LeaveAllocationRequest>
 
   Future<void> approveRequest(int approveId) async {
     final prefs = await SharedPreferences.getInstance();
-    var uri =
-    Uri.parse('$typedServerUrl/api/leave/allocation-approve/$approveId/');
-    var response = await http.put(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
-    });
+    var response = await ApiClient.instance.put('/api/leave/allocation-approve/$approveId/');
 
     if (response.statusCode == 200) {
       setState(() {
@@ -1647,12 +1631,7 @@ class _LeaveAllocationRequest extends State<LeaveAllocationRequest>
 
   Future<void> rejectRequest(int rejectId, String description) async {
     final prefs = await SharedPreferences.getInstance();
-    var uri =
-    Uri.parse('$typedServerUrl/api/leave/allocation-reject/$rejectId/');
-    var response = await http.put(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
-    });
+    var response = await ApiClient.instance.put('/api/leave/allocation-reject/$rejectId/');
     if (response.statusCode == 200) {
       setState(() {
         isSaveClick = false;

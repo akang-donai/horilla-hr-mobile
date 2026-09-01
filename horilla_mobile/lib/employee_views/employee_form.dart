@@ -190,6 +190,7 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
+    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -219,6 +220,7 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
+    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
@@ -744,16 +746,11 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
     final prefs = await SharedPreferences.getInstance();
     String employeeId = updatedDetails['id'].toString();
 
-    var request = http.MultipartRequest('PUT',
-        Uri.parse('$typedServerUrl/api/employee/employees/$employeeId/'));
-
-    if (checkFile) {
-      var attachment =
-      await http.MultipartFile.fromPath('employee_profile', filePath);
-      request.files.add(attachment);
-    }
-    // Auth handled by ApiClient
-    var response = await request.send();
+    var response = await ApiClient.instance.multipart(
+      'PUT',
+      '/api/employee/employees/$employeeId/',
+      files: checkFile ? {'employee_profile': filePath} : {},
+    );
     if (response.statusCode == 200) {
       _errorMessage = null;
       getEmployeeDetails();
@@ -866,15 +863,11 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
       "city": updatedDetails['city'],
       "any_other_code2": updatedDetails['bank_two_code'],
     });
-    http.Response response;
-    if (employeeBankId.isEmpty) {
-      var uri =
-      Uri.parse('$typedServerUrl/api/employee/employee-bank-details/');
-      response = await http.post(uri, headers: headers, body: body);
+    var response;
+                if (employeeBankId.isEmpty) {
+      response = await ApiClient.instance.post('/api/employee/employee-bank-details/', jsonBody: jsonDecode(body));
     } else {
-      var uri = Uri.parse(
-          '$typedServerUrl/api/employee/employee-bank-details/$employeeBankId/');
-      response = await http.put(uri, headers: headers, body: body);
+      response = await ApiClient.instance.put('/api/employee/employee-bank-details/$employeeBankId/', jsonBody: jsonDecode(body));
     }
     if (response.statusCode == 201) {
       _errorMessage = null;

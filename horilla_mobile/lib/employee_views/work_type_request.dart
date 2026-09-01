@@ -113,6 +113,7 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   Future<void> fetchToken() async {
     final prefs = await SharedPreferences.getInstance();
+    var token = prefs.getString("token");
     setState(() {
       getToken = token ?? '';
     });
@@ -140,6 +141,7 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   Future<void> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
+    var typedServerUrl = prefs.getString("typed_url");
     setState(() {
       baseUrl = typedServerUrl ?? '';
     });
@@ -334,23 +336,14 @@ class _WorkTypeRequestPageState extends State<WorkTypeRequestPage> {
 
   Future<void> addOvertime() async {
     final prefs = await SharedPreferences.getInstance();
-    var uri =
-    Uri.parse('$typedServerUrl/api/attendance/attendance-hour-account/');
-    var response = await http.post(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${ApiClient.instance.accessToken}",
-      },
-      body: jsonEncode({
-        "employee_id": employeeIdValue[employeeIdValue.length - 1],
-        "month": selectedMonth,
-        "year": yearController.text,
-        "worked_hours": workedHoursController.text,
-        "pending_hours": pendingHoursController.text,
-        "overtime": overtimeHoursController.text
-      }),
-    );
+    var response = await ApiClient.instance.post('/api/attendance/attendance-hour-account/', jsonBody: {
+      "employee_id": employeeIdValue[employeeIdValue.length - 1],
+      "month": selectedMonth,
+      "year": yearController.text,
+      "worked_hours": workedHoursController.text,
+      "pending_hours": pendingHoursController.text,
+      "overtime": overtimeHoursController.text
+    });
     if (response.statusCode == 200) {
       setState(() {
         currentPage = 0;
