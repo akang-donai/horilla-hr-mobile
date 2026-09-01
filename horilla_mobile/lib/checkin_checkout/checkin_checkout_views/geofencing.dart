@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:horilla/horilla_main/home.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geocoding/geocoding.dart';
+import '../../core/api_client.dart';
 import '../../horilla_main/login.dart';
 
 class MapScreen extends StatefulWidget {
@@ -69,17 +69,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
     final prefs = await SharedPreferences.getInstance();
     var companyId = prefs.getInt("company_id");
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/geofencing/setup/');
 
     try {
-      var response = await http.post(
-        uri,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
+      var response = await ApiClient.instance.post(
+        '/api/geofencing/setup/',
         body: jsonEncode({
           'latitude': selectedLocation?.coordinates.latitude,
           'longitude': selectedLocation?.coordinates.longitude,
@@ -122,17 +115,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     var locationId = responseData['id'];
     final prefs = await SharedPreferences.getInstance();
     var companyId = prefs.getInt("company_id");
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/geofencing/setup/$locationId/');
 
     try {
-      var response = await http.put(
-        uri,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
+      var response = await ApiClient.instance.put(
+        '/api/geofencing/setup/$locationId/',
         body: jsonEncode({
           'latitude': selectedLocation?.coordinates.latitude,
           'longitude': selectedLocation?.coordinates.longitude,
@@ -174,17 +160,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
     final prefs = await SharedPreferences.getInstance();
     var locationId = responseData['id'];
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/geofencing/setup/$locationId/');
 
     try {
-      var response = await http.delete(
-        uri,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
+      var response = await ApiClient.instance.delete(
+        '/api/geofencing/setup/$locationId/',
       );
 
       if (_isDisposed) return;
@@ -219,15 +198,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     if (_isDisposed) return;
 
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/geofencing/setup/');
 
     try {
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/geofencing/setup/');
 
       if (_isDisposed) return;
 

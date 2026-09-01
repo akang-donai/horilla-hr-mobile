@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import '../core/api_client.dart';
 
 class AttendanceRequest extends StatefulWidget {
   const AttendanceRequest({super.key});
@@ -280,23 +280,12 @@ class _AttendanceRequest extends State<AttendanceRequest>
   }
 
   Future<void> getEmployees() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     employeeItems.clear();
     employeeIdMap.clear();
     allEmployeeList.clear();
 
     for (var page = 1;; page++) {
-      var uri = Uri.parse(
-        '$typedServerUrl/api/employee/employee-selector?page=$page',
-      );
-
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/employee/employee-selector?page=$page');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -325,14 +314,7 @@ class _AttendanceRequest extends State<AttendanceRequest>
   }
 
   Future<void> getShiftDetails() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/base/employee-shift/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/base/employee-shift/');
     if (response.statusCode == 200) {
       setState(() {
         for (var rec in jsonDecode(response.body)) {
@@ -346,14 +328,7 @@ class _AttendanceRequest extends State<AttendanceRequest>
   }
 
   Future<void> getWorkTypeDetails() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/base/worktypes');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/base/worktypes');
     if (response.statusCode == 200) {
       setState(() {
         for (var rec in jsonDecode(response.body)) {
@@ -1270,16 +1245,8 @@ class _AttendanceRequest extends State<AttendanceRequest>
   }
 
   Future<void> getAllRequestedAttendances() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     if (currentPage != 0) {
-      var uri = Uri.parse(
-          '$typedServerUrl/api/attendance/attendance-request/?page=$currentPage&search=$searchText');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/attendance/attendance-request/?page=$currentPage&search=$searchText');
       if (response.statusCode == 200) {
         setState(() {
           requestsAllRequestedAttendances.addAll(
@@ -1311,12 +1278,7 @@ class _AttendanceRequest extends State<AttendanceRequest>
       }
     } else {
       currentPage = 1;
-      var uri = Uri.parse(
-          '$typedServerUrl/api/attendance/attendance-request/?search=$searchText');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/attendance/attendance-request/?search=$searchText');
       if (response.statusCode == 200) {
         setState(() {
           requestsAllRequestedAttendances = List<Map<String, dynamic>>.from(
@@ -1349,19 +1311,11 @@ class _AttendanceRequest extends State<AttendanceRequest>
   }
 
   Future<void> createNewAttendance(Map<String, dynamic> createdDetails) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/attendance/attendance-request/');
     String employeeIdString = createdDetails['employee_id'];
     employeeIdString.split(',');
-    var response = await http.post(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+    var response = await ApiClient.instance.post(
+      '/api/attendance/attendance-request/',
+      jsonBody: {
         "employee_id": createdDetails['employee_id'],
         "attendance_date": createdDetails['attendance_date'],
         "shift_id": createdDetails['shift_id'],
@@ -1422,17 +1376,8 @@ class _AttendanceRequest extends State<AttendanceRequest>
   }
 
   Future<void> permissionChecks() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-        Uri.parse('$typedServerUrl/api/attendance/permission-check/attendance');
-
     try {
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/attendance/permission-check/attendance');
 
       if (response.statusCode == 200) {
         setState(() {
@@ -1455,14 +1400,8 @@ class _AttendanceRequest extends State<AttendanceRequest>
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -1495,16 +1434,9 @@ class _AttendanceRequest extends State<AttendanceRequest>
 
   Future<void> getAllAttendances() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     prefs.getInt("employee_id");
     if (currentPage != 0) {
-      var uri = Uri.parse(
-          '$typedServerUrl/api/attendance/attendance/?page=$currentPage&search=$searchText');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/attendance/attendance/?page=$currentPage&search=$searchText');
       if (response.statusCode == 200) {
         setState(() {
           requestsAllAttendances.addAll(
@@ -1533,12 +1465,7 @@ class _AttendanceRequest extends State<AttendanceRequest>
       }
     } else {
       currentPage = 1;
-      var uri = Uri.parse(
-          '$typedServerUrl/api/attendance/attendance/?search=$searchText');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/attendance/attendance/?search=$searchText');
       if (response.statusCode == 200) {
         setState(() {
           requestsAllAttendances = List<Map<String, dynamic>>.from(
@@ -1597,16 +1524,8 @@ class _AttendanceRequest extends State<AttendanceRequest>
   }
 
   Future<void> rejectLeave(record) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     int requestId = record;
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance-request-cancel/$requestId');
-    var response = await http.put(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.put('/api/attendance/attendance-request-cancel/$requestId');
     if (response.statusCode == 200) {
       setState(() {
         isSaveClick = false;
@@ -1622,16 +1541,8 @@ class _AttendanceRequest extends State<AttendanceRequest>
   }
 
   Future<void> approveRequest(record) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     int requestId = record;
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance-request-approve/$requestId');
-    var response = await http.put(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.put('/api/attendance/attendance-request-approve/$requestId');
     if (response.statusCode == 200) {
       setState(() {
         isSaveClick = false;

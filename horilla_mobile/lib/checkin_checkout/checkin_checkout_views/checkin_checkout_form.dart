@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../core/api_client.dart';
 import '../../horilla_main/home.dart';
 import 'face_detection.dart';
 import 'package:intl/intl.dart';
@@ -252,14 +253,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
   }
 
   Future<void> getCheckIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/attendance/checking-in');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/attendance/checking-in');
     if (response.statusCode == 200) {
       var responseBody = jsonDecode(response.body);
       if (responseBody['status'] == true) {
@@ -308,14 +302,8 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
     if (geo_fencing == true) {
       userLocation = await fetchCurrentLocation();
     }
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
       arguments = {
@@ -378,14 +366,8 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
 
   Future<void> getLoginEmployeeRecord() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
     if (response.statusCode == 200) {
       var responseBody = jsonDecode(response.body);
       setState(() {
@@ -401,14 +383,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
   }
 
   Future<void> getLoginEmployeeWorkInfoRecord(String requestsEmpMyWorkInfoId) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employee-work-information/$requestsEmpMyWorkInfoId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/employee/employee-work-information/$requestsEmpMyWorkInfoId');
     if (response.statusCode == 200) {
       var responseBody = jsonDecode(response.body);
       setState(() {
@@ -440,15 +415,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
   }
 
   Future<bool> getFaceDetection() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/facedetection/config/');
-
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/facedetection/config/');
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);

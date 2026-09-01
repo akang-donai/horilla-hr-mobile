@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/api_client.dart';
 
 class MyAttendanceViews extends StatefulWidget {
   const MyAttendanceViews({super.key});
@@ -81,14 +81,8 @@ class _MyAttendanceViews extends State<MyAttendanceViews>
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -120,14 +114,7 @@ class _MyAttendanceViews extends State<MyAttendanceViews>
   }
 
   Future<void> getAllShiftNames() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/base/employee-shift/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/base/employee-shift/');
     if (response.statusCode == 200) {
       setState(() {
         requestsShiftNames = List<Map<String, dynamic>>.from(

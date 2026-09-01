@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:html/parser.dart' as html_parser;
+import '../core/api_client.dart';
 
 class AttendanceOverview extends StatefulWidget {
   const AttendanceOverview({super.key});
@@ -111,17 +112,8 @@ class _AttendanceOverviewState extends State<AttendanceOverview>
   }
 
   Future<void> permissionChecks() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-        Uri.parse('$typedServerUrl/api/attendance/permission-check/attendance');
-
     try {
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/attendance/permission-check/attendance');
 
       if (response.statusCode == 200) {
         setState(() {
@@ -143,14 +135,8 @@ class _AttendanceOverviewState extends State<AttendanceOverview>
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
       arguments = {
@@ -189,15 +175,7 @@ class _AttendanceOverviewState extends State<AttendanceOverview>
   }
 
   Future<void> getAllOfflineEmployees(int page) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/offline-employees/list/?page=$page');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/attendance/offline-employees/list/?page=$page');
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
       setState(() {
@@ -220,14 +198,7 @@ class _AttendanceOverviewState extends State<AttendanceOverview>
   }
 
   Future<void> getTodayAttendance() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/attendance/today-attendance/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/attendance/today-attendance/');
     if (response.statusCode == 200) {
       setState(() {
         todayAttendance =
@@ -240,15 +211,7 @@ class _AttendanceOverviewState extends State<AttendanceOverview>
   }
 
   Future<void> getOfflineEmployeeCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-        Uri.parse('$typedServerUrl/api/attendance/offline-employees/count/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/attendance/offline-employees/count/');
     if (response.statusCode == 200) {
       setState(() {
         offlineEmpCount = jsonDecode(response.body)['count'].toString();
@@ -299,15 +262,7 @@ class _AttendanceOverviewState extends State<AttendanceOverview>
   }
 
   Future<void> getAllOvertimeValidateEmployees() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance/list/ot?page=$currentPage');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/attendance/attendance/list/ot?page=$currentPage');
     if (response.statusCode == 200) {
       setState(() {
         requestsOvertimeValidate.addAll(
@@ -324,15 +279,7 @@ class _AttendanceOverviewState extends State<AttendanceOverview>
   }
 
   Future<void> getAllNonValidatedAttendance() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance/list/non-validated?page=$currentPage');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/attendance/attendance/list/non-validated?page=$currentPage');
     if (response.statusCode == 200) {
       setState(() {
         requestsNonValidAttendance.addAll(
@@ -1266,22 +1213,14 @@ void _showEmailDialog(
 
 Future<String> getConvertedMailTemplate(
     String templateId, String recordId) async {
-  final prefs = await SharedPreferences.getInstance();
-  var token = prefs.getString("token");
-  var typedServerUrl = prefs.getString("typed_url");
-
-  var uri = Uri.parse('$typedServerUrl/api/attendance/converted-mail-template');
-
-  var request = http.MultipartRequest('PUT', uri);
-
-  request.headers.addAll({
-    "Authorization": "Bearer $token",
-  });
-
-  request.fields['template_id'] = templateId;
-  request.fields['employee_id'] = recordId;
-
-  var streamedResponse = await request.send();
+  var streamedResponse = await ApiClient.instance.multipart(
+    'PUT',
+    '/api/attendance/converted-mail-template',
+    fields: {
+      'template_id': templateId,
+      'employee_id': recordId,
+    },
+  );
 
   var response = await http.Response.fromStream(streamedResponse);
 
@@ -1294,15 +1233,7 @@ Future<String> getConvertedMailTemplate(
 }
 
 Future<Map<String, String>> getTemplate() async {
-  final prefs = await SharedPreferences.getInstance();
-  var token = prefs.getString("token");
-  var typedServerUrl = prefs.getString("typed_url");
-
-  var uri = Uri.parse('$typedServerUrl/api/attendance/mail-templates');
-  var response = await http.get(uri, headers: {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer $token",
-  });
+  var response = await ApiClient.instance.get('/api/attendance/mail-templates');
   if (response.statusCode == 200) {
     List<Map<String, dynamic>> templateList =
         List<Map<String, dynamic>>.from(jsonDecode(response.body));
@@ -1323,21 +1254,15 @@ Future<Map<String, String>> getTemplate() async {
 
 Future<void> sendEmail(
     String recordId, String subject, String fetchedBodyContent) async {
-  final prefs = await SharedPreferences.getInstance();
-  var token = prefs.getString("token");
-  var typedServerUrl = prefs.getString("typed_url");
-
-  var uri =
-      Uri.parse('$typedServerUrl/api/attendance/offline-employee-mail-send');
-
-  var request = http.MultipartRequest('POST', uri);
-
-  request.headers['Authorization'] = 'Bearer $token';
-
-  request.fields['employee_id'] = recordId;
-  request.fields['subject'] = subject;
-  request.fields['body'] = fetchedBodyContent;
-  var response = await request.send();
+  var response = await ApiClient.instance.multipart(
+    'POST',
+    '/api/attendance/offline-employee-mail-send',
+    fields: {
+      'employee_id': recordId,
+      'subject': subject,
+      'body': fetchedBodyContent,
+    },
+  );
   if (response.statusCode == 200) {
     print('Email Sent Successfully');
   } else {}

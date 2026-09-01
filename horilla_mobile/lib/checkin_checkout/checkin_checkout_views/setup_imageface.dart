@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/api_client.dart';
 import 'checkin_checkout_form.dart';
 
 class CameraSetupPage extends StatefulWidget {
@@ -133,34 +134,22 @@ class _CameraSetupPageState extends State<CameraSetupPage> {
     if (_capturedImage == null) return;
 
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$typedServerUrl/api/facedetection/setup/'),
-    );
 
     try {
-      // Prepare file for upload
-      var attachment = await http.MultipartFile.fromPath('image', _capturedImage!.path);
       String fileName = _capturedImage!.name;
 
       // Save image path in prefs
       await prefs.setString("imagePath", fileName);
 
-      // Add file + headers
-      request.files.add(attachment);
-      request.headers['Authorization'] = 'Bearer $token';
-
-      // Send request
-      var streamedResponse = await request.send();
-
-      // Convert to normal Response to access body
+      // Send multipart upload via ApiClient
+      var streamedResponse = await ApiClient.instance.multipart(
+        'POST',
+        '/api/facedetection/setup/',
+        files: {'image': _capturedImage!.path},
+      );
       var response = await http.Response.fromStream(streamedResponse);
 
       print('===== Upload Debug Info =====');
-      print("Request: ${response.request}");
       print("Status Code: ${response.statusCode}");
       print("Headers: ${response.headers}");
       print("Body: ${response.body}");

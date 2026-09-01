@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:shimmer/shimmer.dart';
+import '../core/api_client.dart';
 
 class HourAccountFormPage extends StatefulWidget {
   const HourAccountFormPage({super.key});
@@ -161,17 +161,9 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
 
   Future permissionChecks() async {
     if (_permissionsLoaded) return;
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
 
     try {
-      var uri = Uri.parse(
-          '$typedServerUrl/api/attendance/permission-check/attendance');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/attendance/permission-check/attendance');
 
       if (response.statusCode == 200) {
         setState(() {
@@ -233,14 +225,8 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
       arguments = {
@@ -271,10 +257,6 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
   }
 
   Future getHourAccountRecords({bool reset = false}) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     if (reset) {
       currentPage = 1;
       requests.clear();
@@ -284,13 +266,7 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
 
     if (!hasMoreRecords) return;
 
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance-hour-account?page=$currentPage&search=$searchText');
-
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token"
-    });
+    var response = await ApiClient.instance.get('/api/attendance/attendance-hour-account?page=$currentPage&search=$searchText');
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -317,23 +293,12 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
   }
 
   Future<void> getEmployees() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     employeeItems.clear();
     employeeIdMap.clear();
     allEmployeeList.clear();
 
     for (var page = 1;; page++) {
-      var uri = Uri.parse(
-        '$typedServerUrl/api/employee/employee-selector?page=$page',
-      );
-
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/employee/employee-selector?page=$page');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -365,18 +330,9 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
   }
 
   Future<void> addOvertime() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-        Uri.parse('$typedServerUrl/api/attendance/attendance-hour-account/');
-    var response = await http.post(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+    var response = await ApiClient.instance.post(
+      '/api/attendance/attendance-hour-account/',
+      jsonBody: {
         "employee_id": employeeIdValue[employeeIdValue.length - 1],
         "month": selectedMonth,
         "year": yearController.text,
@@ -395,19 +351,10 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
   }
 
   Future<void> updateHourAccountRecords(updatedDetails) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var hourAccountId = updatedDetails['id'];
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance-hour-account/$hourAccountId/');
-    var response = await http.put(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+    var response = await ApiClient.instance.put(
+      '/api/attendance/attendance-hour-account/$hourAccountId/',
+      jsonBody: {
         "employee_id": updatedDetails['employee_id'],
         "month": updatedDetails['month'],
         "year": updatedDetails['year'],
@@ -428,18 +375,9 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
   }
 
   Future<void> createHourAccountRecords(createdDetails) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri =
-        Uri.parse('$typedServerUrl/api/attendance/attendance-hour-account/');
-    var response = await http.post(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+    var response = await ApiClient.instance.post(
+      '/api/attendance/attendance-hour-account/',
+      jsonBody: {
         "employee_id": createdDetails['employee_id'],
         "month": createdDetails['month'],
         "year": createdDetails['year'],
@@ -619,16 +557,7 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
   }
 
   Future<void> deleteHourAccountRecord(int hourAccountId) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance-hour-account/$hourAccountId/');
-
-    var response = await http.delete(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.delete('/api/attendance/attendance-hour-account/$hourAccountId/');
     if (response.statusCode == 204) {
       setState(() {
         isSaveClick = false;

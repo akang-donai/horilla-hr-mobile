@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../core/api_client.dart';
 import 'checkin_checkout_form.dart';
 import '../controllers/face_detection_controller.dart';
 
@@ -97,49 +98,46 @@ class _FaceScannerState extends State<FaceScanner> with SingleTickerProviderStat
     setState(() => _isFetchingImage = true);
 
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("token");
-    final typedServerUrl = prefs.getString("typed_url");
     final faceDetectionImage = prefs.getString("face_detection_image");
     final imagePath = prefs.getString("imagePath");
 
-    if (token == null || typedServerUrl == null || faceDetectionImage == '' || imagePath == null) {
+    if (faceDetectionImage == '' || imagePath == null) {
       if (mounted) showImageAlertDialog(context);
       return;
     }
 
     try {
-      // --- Build image URL ---
-      String? imageUrl;
-      final cleanedServerUrl = typedServerUrl.endsWith('/')
-          ? typedServerUrl.substring(0, typedServerUrl.length - 1)
-          : typedServerUrl;
-
+      // --- Build image path for ApiClient ---
+      String? apiPath;
       if (faceDetectionImage != null) {
         final cleanedPath = faceDetectionImage.startsWith('/')
-            ? faceDetectionImage.substring(1)
-            : faceDetectionImage;
-        imageUrl = '$cleanedServerUrl/$cleanedPath';
+            ? faceDetectionImage
+            : '/$faceDetectionImage';
+        apiPath = cleanedPath;
       } else if (imagePath != null) {
         final cleanedPath = imagePath.startsWith('/')
-            ? imagePath.substring(1)
-            : imagePath;
-        imageUrl = '$cleanedServerUrl/media/$cleanedPath';
+            ? '/media/$imagePath'
+            : '/media/$imagePath';
+        apiPath = cleanedPath;
       }
 
-      if (imageUrl == null) {
+      if (apiPath == null) {
         if (mounted) showImageAlertDialog(context);
         return;
       }
 
-      debugPrint("🔎 Fetching biometric image: $imageUrl");
+      debugPrint("Fetching biometric image via ApiClient: $apiPath");
 
-      // --- Correct usage of HttpClient + IOClient ---
+      // --- Use IOClient for image download with custom headers ---
       final httpClient = HttpClient();
       httpClient.badCertificateCallback =
           (X509Certificate cert, String host, int port) => true;
       httpClient.autoUncompress = false;
 
       final ioClient = IOClient(httpClient);
+      final token = ApiClient.instance.accessToken;
+      final baseUrl = ApiClient.instance.baseUrl;
+      final imageUrl = '$baseUrl$apiPath';
 
       final response = await ioClient.get(
         Uri.parse(imageUrl),
@@ -154,22 +152,22 @@ class _FaceScannerState extends State<FaceScanner> with SingleTickerProviderStat
 
       print('cfcfccf');
 
-      debugPrint("📥 Status: ${response.statusCode}");
-      debugPrint("📥 Headers: ${response.headers}");
+      debugPrint("Status: ${response.statusCode}");
+      debugPrint("Headers: ${response.headers}");
 
       if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
         setState(() {
           _employeeImageBase64 = base64Encode(response.bodyBytes);
         });
-        debugPrint("✅ Image downloaded: ${response.bodyBytes.length} bytes");
+        debugPrint("Image downloaded: ${response.bodyBytes.length} bytes");
       } else {
-        debugPrint("❌ Invalid response or empty image data");
+        debugPrint("Invalid response or empty image data");
         if (mounted) showImageAlertDialog(context);
       }
 
       ioClient.close();
     } catch (e) {
-      debugPrint("⚠️ Error fetching biometric image: $e");
+      debugPrint("Error fetching biometric image: $e");
       if (mounted) showImageAlertDialog(context);
     } finally {
       if (mounted) setState(() => _isFetchingImage = false);
@@ -274,8 +272,6 @@ class _FaceScannerState extends State<FaceScanner> with SingleTickerProviderStat
     if (!isMatched || !mounted) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("token");
-    final typedServerUrl = prefs.getString("typed_url");
     final geoFencing = prefs.getBool("geo_fencing") ?? false;
 
     if (geoFencing && widget.userLocation == null) {
@@ -287,23 +283,17 @@ class _FaceScannerState extends State<FaceScanner> with SingleTickerProviderStat
 
     try {
       final endpoint = widget.attendanceState == 'NOT_CHECKED_IN'
-          ? 'api/attendance/clock-in/'
-          : 'api/attendance/clock-out/';
-
-      final uri = Uri.parse('$typedServerUrl/$endpoint');
-      final headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      };
+          ? '/api/attendance/clock-in/'
+          : '/api/attendance/clock-out/';
 
       final body = geoFencing
-          ? jsonEncode({
+          ? {
         "latitude": widget.userLocation!.latitude,
         "longitude": widget.userLocation!.longitude,
-      })
-          : jsonEncode({});
+      }
+          : {};
 
-      final response = await http.post(uri, headers: headers, body: body);
+      final response = await ApiClient.instance.post(endpoint, jsonBody: body);
 
       if (response.statusCode == 200 && mounted) {
         Navigator.pop(context, {

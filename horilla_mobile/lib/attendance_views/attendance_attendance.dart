@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import '../core/api_client.dart';
 
 class AttendanceAttendance extends StatefulWidget {
   const AttendanceAttendance({super.key});
@@ -392,23 +392,14 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
 
 
   Future getMyAttendance({bool reset = false}) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     if (reset) {
       currentPage = 1;
       requestsMyAttendance.clear();
       hasMoreMyAttendance = true;
     }
-    if (!hasMoreMyAttendance) return; // 🚫 No more data, skip
+    if (!hasMoreMyAttendance) return;
 
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/my-attendance?page=$currentPage&search=$searchText');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token"
-    });
+    var response = await ApiClient.instance.get('/api/attendance/my-attendance?page=$currentPage&search=$searchText');
 
     if (response.statusCode == 200) {
       final results = List<Map<String, dynamic>>.from(
@@ -433,10 +424,6 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   }
 
   Future getAllNonValidatedAttendance({bool reset = false}) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     if (reset) {
       currentPage = 1;
       requestsNonValidAttendance.clear();
@@ -444,14 +431,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
     }
     if (!hasMoreNonValidated) return;
 
-
-
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance/list/non-validated?page=$currentPage&search=$searchText');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token"
-    });
+    var response = await ApiClient.instance.get('/api/attendance/attendance/list/non-validated?page=$currentPage&search=$searchText');
 
     if (response.statusCode == 200) {
       final results = List<Map<String, dynamic>>.from(
@@ -477,10 +457,6 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   }
 
   Future getAllOvertimeAttendance({bool reset = false}) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     if (reset) {
       currentPage = 1;
       requestsOvertimeAttendance.clear();
@@ -488,12 +464,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
     }
     if (!hasMoreOvertime) return;
 
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance/list/ot?page=$currentPage&search=$searchText');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token"
-    });
+    var response = await ApiClient.instance.get('/api/attendance/attendance/list/ot?page=$currentPage&search=$searchText');
 
     if (response.statusCode == 200) {
       final results = List<Map<String, dynamic>>.from(
@@ -518,10 +489,6 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   }
 
   Future getAllValidatedAttendance({bool reset = false}) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     if (reset) {
       currentPage = 1;
       requestsValidatedAttendance.clear();
@@ -530,13 +497,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
     if (!hasMoreValidated) return;
     print('current page: $currentPage');
 
-
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance/list/validated?page=$currentPage&search=$searchText');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token"
-    });
+    var response = await ApiClient.instance.get('/api/attendance/attendance/list/validated?page=$currentPage&search=$searchText');
 
     if (response.statusCode == 200) {
       final results = List<Map<String, dynamic>>.from(
@@ -615,14 +576,8 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
 
   void prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     var employeeId = prefs.getInt("employee_id");
-    var uri = Uri.parse('$typedServerUrl/api/employee/employees/$employeeId');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -657,15 +612,9 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
     if (_permissionsLoaded) return;
 
     final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
 
     try {
-      var uri = Uri.parse('$typedServerUrl/api/attendance/permission-check/attendance');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/attendance/permission-check/attendance');
 
       if (response.statusCode == 200) {
         setState(() {
@@ -706,28 +655,14 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
 
 
   void managerChecks() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/employee/manager-check/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/employee/manager-check/');
     if (response.statusCode == 200) {
       managerCheck = true;
     }
   }
 
   void attendanceTypeChecks() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/attendance/attendance-type-check/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/attendance/attendance-type-check/');
     if (response.statusCode == 200) {
       print(response.body);
       attendanceTypeCheck = true;
@@ -735,14 +670,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   }
 
   Future<void> getShiftDetails() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/base/employee-shift/');
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.get('/api/base/employee-shift/');
     if (response.statusCode == 200) {
       setState(() {
         for (var rec in jsonDecode(response.body)) {
@@ -756,20 +684,12 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   }
 
   Future<void> getEmployees() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-
     employeeItems.clear();
     employeeIdMap.clear();
 
     for (var page = 1;; page++) {
       print('Fetching employee page: $page');
-      var uri = Uri.parse('$typedServerUrl/api/employee/employee-selector?page=$page');
-      var response = await http.get(uri, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      var response = await ApiClient.instance.get('/api/employee/employee-selector?page=$page');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -796,19 +716,11 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   }
 
   Future<void> createNewAttendance(Map<String, dynamic> createdDetails) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
-    var uri = Uri.parse('$typedServerUrl/api/attendance/attendance/');
     String employeeIdString = createdDetails['employee_id'];
     employeeIdString.split(',');
-    var response = await http.post(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+    var response = await ApiClient.instance.post(
+      '/api/attendance/attendance/',
+      jsonBody: {
         "employee_id": createdDetails['employee_id'],
         "attendance_date": createdDetails['attendance_date'],
         "shift_id": createdDetails['shift_id'],
@@ -872,19 +784,10 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   }
 
   Future<void> updateAttendance(Map<String, dynamic> updatedDetails) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     String attendanceId = updatedDetails['id'].toString();
-    var uri =
-    Uri.parse('$typedServerUrl/api/attendance/attendance/$attendanceId');
-    var response = await http.put(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+    var response = await ApiClient.instance.put(
+      '/api/attendance/attendance/$attendanceId',
+      jsonBody: {
         "employee_id": updatedDetails['employee_id'],
         "attendance_date": updatedDetails['attendance_date'],
         "shift_id": updatedDetails['shift_id'],
@@ -946,19 +849,10 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
 
   Future<void> updateOvertimeAttendance(
       Map<String, dynamic> updatedDetails) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     String attendanceId = updatedDetails['id'].toString();
-    var uri =
-    Uri.parse('$typedServerUrl/api/attendance/attendance/$attendanceId');
-    var response = await http.put(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
+    var response = await ApiClient.instance.put(
+      '/api/attendance/attendance/$attendanceId',
+      jsonBody: {
         "employee_id": updatedDetails['employee_id'],
         "attendance_date": updatedDetails['attendance_date'],
         "shift_id": updatedDetails['shift_id'],
@@ -1017,16 +911,8 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   }
 
   Future<void> deleteAttendance(Map<String, dynamic> deletedDetails) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     String attendanceId = deletedDetails['id'].toString();
-    var uri =
-    Uri.parse('$typedServerUrl/api/attendance/attendance/$attendanceId');
-    var response = await http.delete(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.delete('/api/attendance/attendance/$attendanceId');
     if (response.statusCode == 200) {
       isSaveClick = false;
       currentPage = 0;
@@ -1040,16 +926,8 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
 
   Future<void> deleteNonValidatedAttendance(
       Map<String, dynamic> deletedDetails) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     String attendanceId = deletedDetails['id'].toString();
-    var uri =
-    Uri.parse('$typedServerUrl/api/attendance/attendance/$attendanceId');
-    var response = await http.delete(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.delete('/api/attendance/attendance/$attendanceId');
     if (response.statusCode == 200) {
       isSaveClick = false;
       currentPage = 0;
@@ -1064,16 +942,8 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   }
 
   Future<void> validateAttendance(Map<String, dynamic> deletedDetails) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     String attendanceId = deletedDetails['id'].toString();
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/attendance-validate/$attendanceId');
-    var response = await http.put(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    });
+    var response = await ApiClient.instance.put('/api/attendance/attendance-validate/$attendanceId');
     if (response.statusCode == 200) {
       isSaveClick = false;
       currentPage = 0;
@@ -1086,14 +956,8 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   }
 
   Future<void> validateOverTime(Map<String, dynamic> deletedDetails) async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    var typedServerUrl = prefs.getString("typed_url");
     String attendanceId = deletedDetails['id'].toString();
-    var uri = Uri.parse(
-        '$typedServerUrl/api/attendance/overtime-approve/$attendanceId');
-    var response = await http.put(uri, headers: {
-      "Content-Type": "application/json",
+    var response = await ApiClient.instance.put('/api/attendance/overtime-approve/$attendanceId');
       "Authorization": "Bearer $token",
     });
     if (response.statusCode == 200) {
