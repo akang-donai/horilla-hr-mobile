@@ -31,15 +31,42 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   bool _isExistingGeofence = false;
   bool _isDisposed = false;
 
+  // Department exemption multi-select
+  List<Map<String, dynamic>> _departments = [];
+  List<int> _selectedDepartmentIds = [];
+
   @override
   void initState() {
     super.initState();
     _mapController = AnimatedMapController(vsync: this);
+    _fetchDepartments();
     getGeoFenceLocation().then((_) {
       if (mounted && selectedLocation != null) {
         _mapController.animateTo(dest: selectedLocation!.coordinates, zoom: 12.0);
       }
     });
+  }
+
+  Future<void> _fetchDepartments() async {
+    if (_isDisposed) return;
+    try {
+      var response = await ApiClient.instance.get('/api/base/departments/');
+      if (_isDisposed) return;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final results = data is List ? data : (data['results'] ?? []);
+        if (mounted) {
+          setState(() {
+            _departments = results.map<Map<String, dynamic>>((d) => {
+              'id': d['id'] as int,
+              'name': (d['name'] ?? 'Unknown').toString(),
+            }).toList();
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching departments: $e');
+    }
   }
 
   @override
@@ -78,7 +105,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           'longitude': selectedLocation?.coordinates.longitude,
           'radius_in_meters': selectedLocation?.radius,
           'start': true,
-          'company_id': companyId
+          'company_id': companyId,
+          'exempt_departments': _selectedDepartmentIds,
         },
       );
 
@@ -124,7 +152,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           'longitude': selectedLocation?.coordinates.longitude,
           'radius_in_meters': selectedLocation?.radius,
           'start': true,
-          'company_id': companyId
+          'company_id': companyId,
+          'exempt_departments': _selectedDepartmentIds,
         },
       );
 
@@ -227,6 +256,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 selectedLocation = location;
                 _currentRadius = rad.toDouble();
                 _isExistingGeofence = true;
+                final exemptRaw = data['exempt_departments'] ?? [];
+                _selectedDepartmentIds = (exemptRaw as List)
+                    .map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0)
+                    .where((id) => id > 0)
+                    .toList();
               });
             }
           }
@@ -564,7 +598,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                           value: _currentRadius,
                           min: 1,  // Minimum value is 1 (natural number)
                           max: 10000,
-                          divisions: 99,
+                          divisions: 9999,
                           label: '${_currentRadius.round()} m',  // Round to nearest integer
                           onChanged: (value) {
                             if (mounted) {
@@ -589,6 +623,38 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  if (_departments.isNotEmpty) ...[
+                    const Text(
+                      'Exempt Departments:',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: _departments.map((dept) {
+                        final id = dept['id'] as int;
+                        final name = dept['name'] as String;
+                        final selected = _selectedDepartmentIds.contains(id);
+                        return FilterChip(
+                          label: Text(name, style: const TextStyle(fontSize: 12)),
+                          selected: selected,
+                          onSelected: (checked) {
+                            if (mounted) {
+                              setState(() {
+                                if (checked) {
+                                  _selectedDepartmentIds.add(id);
+                                } else {
+                                  _selectedDepartmentIds.remove(id);
+                                }
+                              });
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
