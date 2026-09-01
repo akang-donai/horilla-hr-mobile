@@ -9,6 +9,7 @@ import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/api_client.dart';
+import '../../core/session.dart';
 import 'checkin_checkout_form.dart';
 import '../controllers/face_detection_controller.dart';
 
@@ -135,8 +136,8 @@ class _FaceScannerState extends State<FaceScanner> with SingleTickerProviderStat
       httpClient.autoUncompress = false;
 
       final ioClient = IOClient(httpClient);
-      final token = ApiClient.instance.accessToken;
-      final baseUrl = ApiClient.instance.baseUrl;
+      final token = await Session.instance.access;
+      final baseUrl = await Session.instance.baseUrl;
       final imageUrl = '$baseUrl$apiPath';
 
       final response = await ioClient.get(

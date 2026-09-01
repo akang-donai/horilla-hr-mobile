@@ -1327,7 +1327,7 @@ class _AttendanceRequest extends State<AttendanceRequest>
         "attendance_worked_hour": createdDetails['attendance_worked_hour'],
         "minimum_hour": createdDetails['minimum_hour'],
         "work_type_id": createdDetails['work_type_id'],
-      }),
+      },
     );
     if (response.statusCode == 200) {
       isSaveClick = false;

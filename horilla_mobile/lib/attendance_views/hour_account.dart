@@ -339,7 +339,7 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
         "worked_hours": workedHoursController.text,
         "pending_hours": pendingHoursController.text,
         "overtime": overtimeHoursController.text
-      }),
+      },
     );
     if (response.statusCode == 200) {
       setState(() {
@@ -361,7 +361,7 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
         "worked_hours": updatedDetails['worked_hours'],
         "pending_hours": updatedDetails['pending_hours'],
         "overtime": updatedDetails['overtime']
-      }),
+      },
     );
     if (response.statusCode == 200) {
       isSaveClick = false;
@@ -384,7 +384,7 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
         "worked_hours": createdDetails['worked_hours'],
         "pending_hours": createdDetails['pending_hours'],
         "overtime": createdDetails['overtime']
-      }),
+      },
     );
     if (response.statusCode == 200) {
       isSaveClick = false;

@@ -53,9 +53,6 @@ class ApiClient {
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
-  String? get baseUrl => _baseUrl;
-  String? get accessToken => _access;
-
   Map<String, String> _headers({bool json = true}) => {
         if (json) 'Content-Type': 'application/json',
         'Authorization': 'Bearer $_access',

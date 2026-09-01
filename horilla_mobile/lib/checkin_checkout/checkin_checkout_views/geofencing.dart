@@ -73,13 +73,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     try {
       var response = await ApiClient.instance.post(
         '/api/geofencing/setup/',
-        body: jsonEncode({
+        jsonBody: {
           'latitude': selectedLocation?.coordinates.latitude,
           'longitude': selectedLocation?.coordinates.longitude,
           'radius_in_meters': selectedLocation?.radius,
           'start': true,
           'company_id': companyId
-        }),
+        },
       );
 
       if (_isDisposed) return;
@@ -119,13 +119,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     try {
       var response = await ApiClient.instance.put(
         '/api/geofencing/setup/$locationId/',
-        body: jsonEncode({
+        jsonBody: {
           'latitude': selectedLocation?.coordinates.latitude,
           'longitude': selectedLocation?.coordinates.longitude,
           'radius_in_meters': selectedLocation?.radius,
           'start': true,
           'company_id': companyId
-        }),
+        },
       );
 
       if (_isDisposed) return;

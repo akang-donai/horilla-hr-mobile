@@ -731,7 +731,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
         "attendance_clock_out": createdDetails['attendance_clock_out'],
         "attendance_worked_hour": createdDetails['attendance_worked_hour'],
         "minimum_hour": createdDetails['minimum_hour'],
-      }),
+      },
     );
 
     if (response.statusCode == 200) {
@@ -798,7 +798,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
         "attendance_clock_out": updatedDetails['attendance_clock_out'],
         "attendance_worked_hour": updatedDetails['attendance_worked_hour'],
         "minimum_hour": updatedDetails['minimum_hour'],
-      }),
+      },
     );
     if (response.statusCode == 200) {
       isSaveClick = false;
@@ -863,7 +863,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
         "attendance_clock_out": updatedDetails['attendance_clock_out'],
         "attendance_worked_hour": updatedDetails['attendance_worked_hour'],
         "minimum_hour": updatedDetails['minimum_hour'],
-      }),
+      },
     );
     if (response.statusCode == 200) {
       isSaveClick = false;
@@ -958,8 +958,6 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
   Future<void> validateOverTime(Map<String, dynamic> deletedDetails) async {
     String attendanceId = deletedDetails['id'].toString();
     var response = await ApiClient.instance.put('/api/attendance/overtime-approve/$attendanceId');
-      "Authorization": "Bearer $token",
-    });
     if (response.statusCode == 200) {
       isSaveClick = false;
       currentPage = 0;
