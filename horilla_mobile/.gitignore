@@ -45,7 +45,7 @@ app.*.map.json
 /android/app/release
 
 # iOS build artifacts
-**/ios/build/
+ios/build/
 
 # Android release signing config
 /android/key.properties

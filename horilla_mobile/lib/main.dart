@@ -25,7 +25,8 @@ import 'horilla_leave/selected_leave_type.dart';
 import 'horilla_main/login.dart';
 import 'horilla_main/home.dart';
 import 'horilla_main/notifications_list.dart';
-import 'package:http/http.dart' as http;
+import 'core/api_client.dart';
+import 'core/session.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
@@ -62,7 +63,7 @@ Future<void> notificationTapBackground(NotificationResponse notificationResponse
 
 void _startNotificationTimer() {
   _notificationTimer?.cancel();
-  _notificationTimer = Timer.periodic(Duration(seconds: 3), (timer) {
+  _notificationTimer = Timer.periodic(Duration(seconds: 60), (timer) {
     if (isAuthenticated) {
       fetchNotifications();
       unreadNotificationsCount();
@@ -103,8 +104,15 @@ Future<void> main() async {
     onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
   );
 
-  final prefs = await SharedPreferences.getInstance();
-  isAuthenticated = prefs.getString('token') != null;
+  await ApiClient.instance.init();
+  ApiClient.instance.onSessionExpired = () async {
+    isAuthenticated = false;
+    await Session.instance.clear();
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+  };
+
+  final access = await Session.instance.access;
+  isAuthenticated = access != null;
 
   if (isAuthenticated) {
     _startNotificationTimer();
@@ -161,17 +169,11 @@ Future<void> prefetchData() async {
   if (!isAuthenticated) return;
 
   final prefs = await SharedPreferences.getInstance();
-  var token = prefs.getString("token");
-  var typed_serverUrl = prefs.getString("typed_url");
   var employeeId = prefs.getInt("employee_id");
 
-  if (token == null || typed_serverUrl == null || employeeId == null) return;
+  if (employeeId == null) return;
 
-  var uri = Uri.parse('$typed_serverUrl/api/employee/employees/$employeeId');
-  var response = await http.get(uri, headers: {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer $token",
-  });
+  var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
 
   if (response.statusCode == 200) {
     final responseData = jsonDecode(response.body);
@@ -206,17 +208,7 @@ Future<void> prefetchData() async {
 Future<void> markAllReadNotification() async {
   if (!isAuthenticated) return;
 
-  final prefs = await SharedPreferences.getInstance();
-  var token = prefs.getString("token");
-  var typed_serverUrl = prefs.getString("typed_url");
-
-  if (token == null || typed_serverUrl == null) return;
-
-  var uri = Uri.parse('$typed_serverUrl/api/notifications/notifications/bulk-read/');
-  var response = await http.post(uri, headers: {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer $token",
-  });
+  var response = await ApiClient.instance.post('/api/notifications/notifications/bulk-read/');
 
   if (response.statusCode == 200) {
     notifications.clear();
@@ -231,25 +223,11 @@ Future<void> fetchNotifications() async {
     return;
   }
 
-  final prefs = await SharedPreferences.getInstance();
-  var token = prefs.getString("token");
-  var typed_serverUrl = prefs.getString("typed_url");
-
-  if (token == null || typed_serverUrl == null) {
-    print('Missing required data for notifications');
-    return;
-  }
-
-
   try {
     print('Fetching notifications...');
-    var uri = Uri.parse(
-        '$typed_serverUrl/api/notifications/notifications/list/unread?page=${currentPage == 0 ? 1 : currentPage}');
-
-    var response = await http.get(uri, headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    }).timeout(Duration(seconds: 3));
+    var response = await ApiClient.instance.get(
+        '/api/notifications/notifications/list/unread?page=${currentPage == 0 ? 1 : currentPage}')
+        .timeout(Duration(seconds: 3));
 
     if (response.statusCode == 200) {
       List<Map<String, dynamic>> fetchedNotifications =
@@ -298,17 +276,7 @@ Future<void> fetchNotifications() async {
 Future<void> unreadNotificationsCount() async {
   if (!isAuthenticated) return;
 
-  final prefs = await SharedPreferences.getInstance();
-  var token = prefs.getString("token");
-  var typed_serverUrl = prefs.getString("typed_url");
-
-  if (token == null || typed_serverUrl == null) return;
-
-  var uri = Uri.parse('$typed_serverUrl/api/notifications/notifications/list/unread');
-  var response = await http.get(uri, headers: {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer $token",
-  });
+  var response = await ApiClient.instance.get('/api/notifications/notifications/list/unread');
 
   if (response.statusCode == 200) {
     notificationsCount = jsonDecode(response.body)['count'];
@@ -390,8 +358,8 @@ class _FutureBuilderPageState extends State<FutureBuilderPage> {
   }
 
   Future<bool> _initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString("token") != null;
+    final access = await Session.instance.access;
+    return access != null;
   }
 
   @override

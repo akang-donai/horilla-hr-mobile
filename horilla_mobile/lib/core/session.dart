@@ -27,7 +27,7 @@ class Session {
     if (refresh != null) await _secure.write(key: 'refresh', value: refresh);
   }
 
-  static const _sessionKeys = ['typed_url'];
+  static const _sessionKeys = <String>[];
 
   Future<void> clear() async {
     await _secure.delete(key: 'access');

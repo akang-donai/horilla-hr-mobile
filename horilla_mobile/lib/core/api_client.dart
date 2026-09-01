@@ -145,6 +145,7 @@ class ApiClient {
           )
           .timeout(_timeout);
     } catch (_) {}
+    // ponytail: tokens cleared locally even if server logout fails; acceptable given refresh TTL
     _access = null;
     _refresh = null;
   }

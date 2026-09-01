@@ -16,12 +16,12 @@ Future<TimeOfDay?> selectTime(BuildContext context, {TimeOfDay? initialTime}) as
   );
 }
 
-Future<DateTime?> pickDateTime(BuildContext context, {required bool isStartTime, DateTime? initialDate, DateTime? minDate}) async {
+Future<DateTime?> pickDateTime(BuildContext context, {required bool isStartTime, DateTime? initialDate, DateTime? minDate, DateTime? lastDate}) async {
   final DateTime? pickedDate = await selectDate(
     context,
     initialDate ?? DateTime.now(),
     firstDate: minDate ?? (isStartTime ? DateTime.now() : initialDate),
-    lastDate: DateTime(2025, 12, 31),
+    lastDate: lastDate ?? DateTime.now().add(const Duration(days: 3650)),
   );
 
   if (pickedDate != null) {

@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/api_client.dart';
 import '../main.dart';
 
 class LoginPage extends StatefulWidget {
@@ -23,7 +23,6 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   double horizontalMargin = 0.0;
-  Timer? _notificationTimer;
 
 
   @override
@@ -39,58 +38,50 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  void _startNotificationTimer() {
-    _notificationTimer?.cancel();
-    _notificationTimer = Timer.periodic(Duration(seconds: 3), (timer) {
-      if (isAuthenticated) {
-        fetchNotifications();
-        unreadNotificationsCount();
-      } else {
-        timer.cancel();
-        _notificationTimer = null;
-      }
-    });
-  }
-
 
 
   Future<void> _login() async {
     String serverAddress = serverController.text.trim();
+    if (serverAddress.endsWith('/')) {
+      serverAddress = serverAddress.substring(0, serverAddress.length - 1);
+    }
+    if (serverAddress.startsWith('http://')) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Server address must use https://'),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+    if (!serverAddress.startsWith('https://')) {
+      serverAddress = 'https://$serverAddress';
+    }
     String username = usernameController.text.trim();
     String password = passwordController.text.trim();
-    String url = '$serverAddress/api/auth/login/';
 
     try {
-      http.Response response = await http.post(
-        Uri.parse(url),
+      final response = await http.post(
+        Uri.parse('$serverAddress/api/auth/login/'),
         body: {'username': username, 'password': password},
-      ).timeout(Duration(seconds: 3));
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final responseBody = jsonDecode(response.body);
-
-        var token = responseBody['access'] ?? '';
-
-        var employeeId = responseBody['employee']?['id'] ?? 0;
-        var companyId = responseBody['company_id'] ?? 0;
-        bool face_detection = responseBody['face_detection'] ?? false;
-        bool geo_fencing = responseBody['geo_fencing'] ?? false;
-        var face_detection_image = responseBody['face_detection_image']?.toString() ?? '';
-
-
+        await ApiClient.instance.onLogin(
+          baseUrl: serverAddress,
+          access: responseBody['access'] ?? '',
+          refresh: responseBody['refresh'] ?? '',
+        );
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString("token", token);
-        await prefs.setString("typed_url", serverAddress);
-        await prefs.setString("face_detection_image", face_detection_image);
-        await prefs.setBool("face_detection", face_detection);
-        await prefs.setBool("geo_fencing", geo_fencing);
-        await prefs.setInt("employee_id", employeeId);
-        await prefs.setInt("company_id", companyId);
+        await prefs.setString('face_detection_image',
+            responseBody['face_detection_image']?.toString() ?? '');
+        await prefs.setBool('face_detection', responseBody['face_detection'] ?? false);
+        await prefs.setBool('geo_fencing', responseBody['geo_fencing'] ?? false);
+        await prefs.setInt('employee_id', responseBody['employee']?['id'] ?? 0);
+        await prefs.setInt('company_id', responseBody['company_id'] ?? 0);
 
         isAuthenticated = true;
-        _startNotificationTimer();
         prefetchData();
-
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/home');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

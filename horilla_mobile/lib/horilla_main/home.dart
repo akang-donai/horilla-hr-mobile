@@ -11,6 +11,8 @@ import 'dart:convert';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../checkin_checkout/checkin_checkout_views/geofencing.dart';
+import '../core/api_client.dart';
+import '../core/session.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -470,14 +472,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> clearToken(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    String? typedServerUrl = prefs.getString("typed_url");
-    await prefs.remove('token');
+    await ApiClient.instance.logoutServerSide();
+    await Session.instance.clear();
     isAuthenticated = false;
     _notificationTimer?.cancel();
     _notificationTimer = null;
 
-    Navigator.pushNamed(context, '/login', arguments: typedServerUrl);
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   Future<void> enableFaceDetection() async {
