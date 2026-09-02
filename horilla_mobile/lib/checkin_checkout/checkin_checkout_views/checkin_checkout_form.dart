@@ -222,11 +222,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
           Duration clockInTime = Duration.zero;
           String? clockTimeString = duration;
           if (clockTimeString != null) {
-            List<String> timeComponents = clockTimeString.split(':');
-            int hours = int.parse(timeComponents[0]);
-            int minutes = int.parse(timeComponents[1]);
-            int seconds = int.parse(timeComponents[2].split('.')[0]);
-            clockInTime = Duration(hours: hours, minutes: minutes, seconds: seconds);
+            clockInTime = parseDuration(clockTimeString) ?? Duration.zero;
           }
           stopwatchManager.startStopwatch(initialTime: clockInTime);
           _saveClockState(clockCheckedIn, 1, checkInFormattedTime.toString());
@@ -242,11 +238,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
       String? clockTimeString = duration;
       elapsedTimeString = duration ?? '';
       if (clockTimeString != null) {
-        List<String> timeComponents = clockTimeString.split(':');
-        int hours = int.parse(timeComponents[0]);
-        int minutes = int.parse(timeComponents[1]);
-        int seconds = int.parse(timeComponents[2].split('.')[0]);
-        clockInTime = Duration(hours: hours, minutes: minutes, seconds: seconds);
+        clockInTime = parseDuration(clockTimeString) ?? Duration.zero;
         elapsedTime = clockInTime;
       }
       swipeDirection = 'Swipe to Check-In';
@@ -1024,6 +1016,19 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
             if (result.ok) {
               _faceAttempts = 0;
               _applyClockSuccess(checkedIn: checkingIn);
+            } else if (result.isStateMismatch) {
+              // Local flag disagreed with the server (e.g. state init failed and
+              // left the button stale). Re-sync from the server and let the user
+              // swipe again rather than retrying a direction the server rejects.
+              await getCheckIn();
+              final serverSaysCheckedIn = clockIn != 'false';
+              _applyClockSuccess(checkedIn: serverSaysCheckedIn);
+              _faceAttempts = 0;
+              showCheckInFailedDialog(
+                  context,
+                  serverSaysCheckedIn
+                      ? 'You are already clocked in. Swipe left to clock out.'
+                      : 'You are not clocked in. Swipe right to clock in.');
             } else if (result.errorCode == 'not_enrolled') {
               Navigator.pushNamed(context, '/setup_imageface');
             } else if (result.errorCode == 'face_mismatch' && _faceAttempts < 3) {

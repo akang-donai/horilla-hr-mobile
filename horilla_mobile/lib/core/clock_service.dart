@@ -7,6 +7,14 @@ class ClockResult {
   final String? errorCode; // outside_geofence | face_mismatch | not_enrolled
   final String? message;
   ClockResult(this.ok, {this.errorCode, this.message});
+
+  /// The server rejected the action because it disagrees with the client about
+  /// whether the employee is currently clocked in. Carries no error_code, so it
+  /// is matched on the message the attendance views return.
+  bool get isStateMismatch {
+    final m = message?.toLowerCase() ?? '';
+    return m.contains('already clocked-in') || m.contains('already clocked-out');
+  }
 }
 
 Future<Position?> _position() async {
