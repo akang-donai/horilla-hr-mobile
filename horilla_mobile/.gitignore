@@ -49,3 +49,5 @@ ios/build/
 
 # Android release signing config
 /android/key.properties
+*.jks
+*.keystore
