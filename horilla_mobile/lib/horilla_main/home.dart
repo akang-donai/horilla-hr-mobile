@@ -1209,9 +1209,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ],
         ),
       ),
-      extendBody: true,
+      // extendBody drew the body underneath the system navigation bar. On
+      // Android 15+ edge-to-edge is enforced, so that left the gesture bar
+      // overlapping the bottom nav instead of sitting below it.
+      extendBody: false,
       bottomNavigationBar: (bottomBarPages.length <= maxCount)
-          ? AnimatedNotchBottomBar(
+          ? Padding(
+        // Keep the bar clear of the gesture/navigation inset.
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
+        child: AnimatedNotchBottomBar(
         notchBottomBarController: _controller,
         color: Colors.red,
         showLabel: true,
@@ -1273,6 +1279,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               break;
           }
         },
+      ),
       )
           : null,
     );

@@ -449,6 +449,89 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
     );
   }
 
+  /// Repaint clock state to match the server without running the clock-out
+  /// bookkeeping. Used when the server rejects an action because it disagrees
+  /// with local state: nothing was clocked out, so stopping the stopwatch and
+  /// storing a checkout time (as _applyClockSuccess does) would be wrong.
+  void _syncClockStateFromServer() {
+    final bool serverSaysCheckedIn = clockIn != 'false';
+    setState(() {
+      isCheckIn = serverSaysCheckedIn;
+      clockCheckedIn = serverSaysCheckedIn;
+      clockCheckBool = serverSaysCheckedIn;
+      if (serverSaysCheckedIn) {
+        timeDisplay = clockIn;
+        swipeDirection = 'Swipe to Check-out';
+        final Duration elapsed =
+            (duration != null ? parseDuration(duration!) : null) ?? Duration.zero;
+        stopwatchManager.startStopwatch(initialTime: elapsed);
+      } else {
+        timeDisplay = clockInTimes;
+        swipeDirection = 'Swipe to Check-In';
+        stopwatchManager.stopStopwatch();
+      }
+    });
+  }
+
+  Future<void> _handleSwipe(DragEndDetails details) async {
+    if (_isProcessingDrag) return;
+
+    final double vx = details.velocity.pixelsPerSecond.dx;
+    if (vx.abs() < 100) return; // ignore taps and stray vertical drags
+    final bool checkingIn = vx > 0;
+
+    // Swiping the direction we are already in is a no-op.
+    if (checkingIn == clockCheckedIn) return;
+
+    _isProcessingDrag = true;
+    try {
+      final selfiePath = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(builder: (_) => const FaceCaptureScreen()),
+      );
+      if (selfiePath == null) return;
+
+      final result =
+          await clockAction(checkIn: checkingIn, selfiePath: selfiePath);
+      if (!mounted) return;
+
+      if (result.ok) {
+        _faceAttempts = 0;
+        _applyClockSuccess(checkedIn: checkingIn);
+      } else if (result.isStateMismatch) {
+        // Local flag disagreed with the server. Re-read authoritative state and
+        // repaint, then tell the user which way to swipe.
+        await getCheckIn();
+        if (!mounted) return;
+        _syncClockStateFromServer();
+        _faceAttempts = 0;
+        showCheckInFailedDialog(
+            context,
+            clockIn != 'false'
+                ? 'You are already clocked in. Swipe left to clock out.'
+                : 'You are not clocked in. Swipe right to clock in.');
+      } else if (result.errorCode == 'not_enrolled') {
+        Navigator.pushNamed(context, '/setup_imageface');
+      } else if (result.errorCode == 'face_mismatch' && _faceAttempts < 3) {
+        _faceAttempts++;
+        showCheckInFailedDialog(context,
+            result.message ?? 'Face verification failed. Try again.');
+      } else if (result.errorCode == 'outside_geofence') {
+        _faceAttempts = 0;
+        showCheckInFailedDialog(
+            context, result.message ?? 'Outside allowed area');
+      } else {
+        _faceAttempts = 0;
+        showCheckInFailedDialog(
+            context, result.message ?? 'Clock action failed');
+      }
+    } finally {
+      // Always clear, so an early return or a thrown exception cannot strand
+      // the guard and kill the swipe for the rest of the session.
+      _isProcessingDrag = false;
+    }
+  }
+
   void _applyClockSuccess({required bool checkedIn}) {
     setState(() {
       if (checkedIn) {
@@ -988,64 +1071,11 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
         ),
         SizedBox(height: MediaQuery.of(context).size.height * 0.02),
         GestureDetector(
-          onPanUpdate: (details) async {
-            if (_isProcessingDrag) return;
-            if (details.delta.dx.abs() <= details.delta.dy.abs() || details.delta.dx.abs() <= 10) return;
-
-            _isProcessingDrag = true;
-            final bool checkingIn = details.delta.dx > 0;
-            if (checkingIn && clockCheckedIn) {
-              _isProcessingDrag = false;
-              return;
-            }
-            if (!checkingIn && !clockCheckedIn) {
-              _isProcessingDrag = false;
-              return;
-            }
-
-            final selfiePath = await Navigator.push<String>(
-              context,
-              MaterialPageRoute(builder: (_) => const FaceCaptureScreen()),
-            );
-            if (selfiePath == null) {
-              _isProcessingDrag = false;
-              return;
-            }
-
-            final result = await clockAction(checkIn: checkingIn, selfiePath: selfiePath);
-            if (result.ok) {
-              _faceAttempts = 0;
-              _applyClockSuccess(checkedIn: checkingIn);
-            } else if (result.isStateMismatch) {
-              // Local flag disagreed with the server (e.g. state init failed and
-              // left the button stale). Re-sync from the server and let the user
-              // swipe again rather than retrying a direction the server rejects.
-              await getCheckIn();
-              final serverSaysCheckedIn = clockIn != 'false';
-              _applyClockSuccess(checkedIn: serverSaysCheckedIn);
-              _faceAttempts = 0;
-              showCheckInFailedDialog(
-                  context,
-                  serverSaysCheckedIn
-                      ? 'You are already clocked in. Swipe left to clock out.'
-                      : 'You are not clocked in. Swipe right to clock in.');
-            } else if (result.errorCode == 'not_enrolled') {
-              Navigator.pushNamed(context, '/setup_imageface');
-            } else if (result.errorCode == 'face_mismatch' && _faceAttempts < 3) {
-              _faceAttempts++;
-              showCheckInFailedDialog(context, result.message ?? 'Face verification failed. Try again.');
-            } else if (result.errorCode == 'outside_geofence') {
-              _faceAttempts = 0;
-              showCheckInFailedDialog(context, result.message ?? 'Outside allowed area');
-            } else {
-              _faceAttempts = 0;
-              showCheckInFailedDialog(context, result.message ?? 'Clock action failed');
-            }
-            _isProcessingDrag = false;
-          },
-          onPanEnd: (details) {
-            _isProcessingDrag = false;
-          },
+          // One callback per completed gesture. onPanUpdate fired on every
+          // pointer movement, so the in-flight guard below had to survive
+          // dozens of re-entries and never reliably cleared once the camera
+          // screen interrupted the gesture, leaving the swipe permanently dead.
+          onHorizontalDragEnd: (details) => _handleSwipe(details),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Container(
