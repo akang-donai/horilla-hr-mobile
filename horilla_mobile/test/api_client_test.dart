@@ -51,6 +51,42 @@ void main() {
   });
 
 
+  test('concurrent 401s trigger only one refresh', () async {
+    // Rotating refresh tokens are blacklisted after first use, so a second
+    // concurrent refresh presents a dead token, fails, and logs the user out.
+    var refreshCalls = 0;
+    var expired = false;
+    ApiClient.instance.configureForTest(
+        baseUrl: 'https://hr.example.com', access: 'OLD', refresh: 'RT');
+    ApiClient.instance.onSessionExpired = () => expired = true;
+    ApiClient.instance.httpClient = MockClient((req) async {
+      if (req.url.path == '/api/auth/refresh/') {
+        refreshCalls++;
+        if (refreshCalls > 1) {
+          // What the server does to a blacklisted token.
+          return http.Response('{"detail":"blacklisted"}', 401);
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        return http.Response(
+            jsonEncode({'access': 'NEW', 'refresh': 'RT2'}), 200);
+      }
+      return http.Response(
+          '{}', req.headers['Authorization'] == 'Bearer NEW' ? 200 : 401);
+    });
+
+    // A screen opening several endpoints at once, as the profile page does.
+    final results = await Future.wait([
+      ApiClient.instance.get('/api/base/companies/'),
+      ApiClient.instance.get('/api/base/departments/'),
+      ApiClient.instance.get('/api/base/job-positions/'),
+      ApiClient.instance.get('/api/base/job-roles/'),
+    ]);
+
+    expect(refreshCalls, 1, reason: 'refresh must be single-flight');
+    expect(results.every((r) => r.statusCode == 200), isTrue);
+    expect(expired, isFalse, reason: 'must not log the user out');
+  });
+
   group('uploadFilename', () {
     test('keeps web image extensions', () {
       expect(uploadFilename('/tmp/pic.jpg'), 'pic.jpg');

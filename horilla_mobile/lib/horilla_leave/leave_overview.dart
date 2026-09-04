@@ -37,7 +37,6 @@ class _LeaveOverview extends State<LeaveOverview>
   bool permissionLeaveOverviewCheck = false;
   bool permissionMyLeaveRequestCheck = false;
   bool permissionLeaveAllocationCheck = false;
-  late String getToken = '';
 
 
   @override
@@ -49,18 +48,25 @@ class _LeaveOverview extends State<LeaveOverview>
   @override
   void initState() {
     super.initState();
-    getAllLeaveRequest();
-    getBaseUrl();
-    fetchToken();
-    prefetchData();
+    _load();
   }
 
-  Future<void> fetchToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    var token = prefs.getString("token");
-    setState(() {
-      getToken = token ?? '';
-    });
+  /// Load the screen in order, and always stop the spinner.
+  ///
+  /// These calls used to be fired unawaited from initState, so the leave
+  /// requests were fetched before the permission checks that decide which
+  /// endpoint to use, and any failure left isLoading true forever.
+  Future<void> _load() async {
+    try {
+      await checkPermissions();
+      await getBaseUrl();
+      await prefetchData();
+      await getAllLeaveRequest();
+    } catch (e) {
+      debugPrint('leave overview load failed: $e');
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
   }
 
   Future<void> checkPermissions() async {
@@ -71,7 +77,6 @@ class _LeaveOverview extends State<LeaveOverview>
   }
 
   Future<void> permissionLeaveOverviewChecks() async {
-    final prefs = await SharedPreferences.getInstance();
         var response = await ApiClient.instance.get('/api/leave/check-perm/');
     if (response.statusCode == 200) {
       permissionLeaveOverviewCheck = true;
@@ -84,7 +89,6 @@ class _LeaveOverview extends State<LeaveOverview>
   }
 
   Future<void> permissionLeaveTypeChecks() async {
-    final prefs = await SharedPreferences.getInstance();
         var response = await ApiClient.instance.get('/api/leave/check-type/');
     if (response.statusCode == 200) {
       permissionLeaveTypeCheck = true;
@@ -97,7 +101,6 @@ class _LeaveOverview extends State<LeaveOverview>
   }
 
   Future<void> permissionLeaveRequestChecks() async {
-    final prefs = await SharedPreferences.getInstance();
         var response = await ApiClient.instance.get('/api/leave/check-request/');
     if (response.statusCode == 200) {
       permissionLeaveRequestCheck = true;
@@ -110,7 +113,6 @@ class _LeaveOverview extends State<LeaveOverview>
   }
 
   Future<void> permissionLeaveAssignChecks() async {
-    final prefs = await SharedPreferences.getInstance();
         var response = await ApiClient.instance.get('/api/leave/check-assign/');
     if (response.statusCode == 200) {
       permissionLeaveAssignCheck = true;
@@ -130,7 +132,7 @@ class _LeaveOverview extends State<LeaveOverview>
     });
   }
 
-  void prefetchData() async {
+  Future<void> prefetchData() async {
     final prefs = await SharedPreferences.getInstance();
     var employeeId = prefs.getInt("employee_id");
         var response = await ApiClient.instance.get('/api/employee/employees/$employeeId');
@@ -197,19 +199,24 @@ class _LeaveOverview extends State<LeaveOverview>
   }
 
   Future<void> getAllLeaveRequest() async {
-    final prefs = await SharedPreferences.getInstance();
-    var typedServerUrl = prefs.getString('typed_url');
-    var token = prefs.getString('token');
-    var now = DateTime.now();
-    var formattedDate =
+    // Tokens live in secure storage and the base URL in ApiClient, so the
+    // old prefs.getString('token')! threw a null assertion here and aborted
+    // the load before isLoading was ever cleared -- the spinner never ended.
+    final now = DateTime.now();
+    final formattedDate =
         "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-    await fetchApprovedRequests(typedServerUrl!, token!, formattedDate, now);
-    await fetchAllRequests(typedServerUrl, token);
+    await fetchApprovedRequests(formattedDate);
+    await fetchAllRequests();
   }
 
-  Future<void> fetchApprovedRequests(String serverUrl, String token,
-      String formattedDate, DateTime now) async {
-    var response = await ApiClient.instance.get('/api/leave/request/?from_date=$formattedDate&to_date=$formattedDate&status=approved');
+  Future<void> fetchApprovedRequests(String formattedDate) async {
+    // /api/leave/request/ is admin-only (403 for an ordinary employee);
+    // user-request returns the signed-in employee's own leave.
+    final path = permissionLeaveRequestCheck
+        ? '/api/leave/request/'
+        : '/api/leave/user-request/';
+    var response = await ApiClient.instance.get(
+        '$path?from_date=$formattedDate&to_date=$formattedDate&status=approved');
     if (response.statusCode == 200) {
       setState(() {
         var allRequests = List<Map<String, dynamic>>.from(
@@ -226,8 +233,11 @@ class _LeaveOverview extends State<LeaveOverview>
     }
   }
 
-  Future<void> fetchAllRequests(String serverUrl, String token) async {
-    var response = await ApiClient.instance.get('/api/leave/request');
+  Future<void> fetchAllRequests() async {
+    final path = permissionLeaveRequestCheck
+        ? '/api/leave/request/'
+        : '/api/leave/user-request/';
+    var response = await ApiClient.instance.get(path);
 
     if (response.statusCode == 200) {
       setState(() {
@@ -481,7 +491,6 @@ class _LeaveOverview extends State<LeaveOverview>
                                   fullName,
                                   image ?? "",
                                   baseUrl,
-                                  getToken,
                                   badgeId ?? "",
                                   requestId,
                                 );
@@ -909,7 +918,7 @@ Widget _buildShimmerList(BuildContext context) {
 }
 
 Widget buildLeaveTodayTile(BuildContext context, String fullName, String image,
-    String baseUrl,token, String badgeId, int requestId) {
+    String baseUrl, String badgeId, int requestId) {
   return GestureDetector(
     child: Container(
       margin: const EdgeInsets.symmetric(vertical: 1.0),

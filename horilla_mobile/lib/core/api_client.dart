@@ -110,7 +110,29 @@ class ApiClient {
     return res;
   }
 
-  Future<bool> _tryRefresh() async {
+  /// In-flight refresh, shared by every caller that hits a 401 at once.
+  Future<bool>? _refreshInFlight;
+
+  /// Refresh the access token, collapsing concurrent callers into one request.
+  ///
+  /// A screen typically issues several requests in parallel, so an expired
+  /// access token produces several simultaneous 401s. Refreshing per 401 sent
+  /// one POST /api/auth/refresh/ each: with ROTATE_REFRESH_TOKENS and
+  /// BLACKLIST_AFTER_ROTATION the first rotated the token and blacklisted it,
+  /// and the rest presented the dead token, got 401, and signed the user out.
+  Future<bool> _tryRefresh() {
+    final inFlight = _refreshInFlight;
+    if (inFlight != null) return inFlight;
+    final started = _doRefresh();
+    _refreshInFlight = started;
+    // Clear only our own attempt, so a later refresh is not cancelled by an
+    // earlier one completing.
+    return started.whenComplete(() {
+      if (identical(_refreshInFlight, started)) _refreshInFlight = null;
+    });
+  }
+
+  Future<bool> _doRefresh() async {
     if (_refresh == null) return false;
     try {
       final res = await httpClient
