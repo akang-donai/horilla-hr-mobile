@@ -3293,7 +3293,11 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
     badgeController.text = employeeDetails['badge_id'] ?? '';
     emailController.text = employeeDetails['email'] ?? '';
     phoneController.text = employeeDetails['phone'] ?? '';
-    workEmailController.text = employeeDetails['email'] ?? '';
+    // Work email lives on the work-information record, not the employee
+    // record. Reading employeeDetails['email'] here showed the personal
+    // address in the work-email field, disagreeing with the web profile.
+    workEmailController.text =
+        employeeWorkInfoRecord['email']?.toString() ?? '';
     workPhoneController.text = employeeDetails['phone'] ?? '';
     final args =
     ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
