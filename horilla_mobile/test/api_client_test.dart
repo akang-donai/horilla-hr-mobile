@@ -49,4 +49,22 @@ void main() {
     expect(res.statusCode, 401);
     expect(expired, isTrue);
   });
+
+
+  group('uploadFilename', () {
+    test('keeps web image extensions', () {
+      expect(uploadFilename('/tmp/pic.jpg'), 'pic.jpg');
+      expect(uploadFilename('/a/b/photo.PNG'), 'photo.PNG');
+    });
+
+    test('renames formats the server cannot decode', () {
+      // Android camera default; image_picker hands back JPEG bytes.
+      expect(uploadFilename('/storage/IMG_20260904.heic'), 'IMG_20260904.jpg');
+      expect(uploadFilename('/storage/shot.HEIF'), 'shot.jpg');
+    });
+
+    test('handles a name with no extension', () {
+      expect(uploadFilename('/tmp/scan'), 'scan.jpg');
+    });
+  });
 }

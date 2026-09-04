@@ -760,13 +760,33 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
         isLoadingImage = false;
       });
     } else {
-      var responseBody = await response.stream.bytesToString();
-      var errorJson = jsonDecode(responseBody);
-      if (errorJson.containsKey('non_field_errors')) {
-        _errorMessage = errorJson['non_field_errors'].join('\n');
+      final responseBody = await response.stream.bytesToString();
+      // Surface whatever the server rejected. Previously only
+      // non_field_errors was read, so a field error (the common case) was
+      // parsed and thrown away, leaving the upload silently doing nothing.
+      debugPrint(
+          'employee_profile upload failed: ${response.statusCode} $responseBody');
+      String message = 'Upload failed (${response.statusCode})';
+      try {
+        final errorJson = jsonDecode(responseBody);
+        if (errorJson is Map) {
+          final parts = <String>[];
+          errorJson.forEach((key, value) {
+            final text = value is List ? value.join(', ') : value.toString();
+            parts.add(key == 'non_field_errors' ? text : '$key: $text');
+          });
+          if (parts.isNotEmpty) message = parts.join('\n');
+        }
+      } catch (_) {
+        if (responseBody.isNotEmpty) message = responseBody;
+      }
+      _errorMessage = message;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.red),
+        );
         setState(() {});
       }
-      setState(() {});
     }
   }
 
@@ -1064,8 +1084,16 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
 
   Future<XFile?> uploadFile(BuildContext context) async {
     final picker = ImagePicker();
-    final XFile? pickedFile =
-    await picker.pickImage(source: ImageSource.gallery);
+    // Android cameras default to HEIC, which the server's Pillow cannot
+    // decode ("not an image or a corrupted image"). Passing imageQuality
+    // forces image_picker to re-encode to JPEG, and the size cap keeps a
+    // multi-megabyte camera original from being uploaded at full resolution.
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1440,
+      maxHeight: 1440,
+    );
     if (pickedFile != null) {
       return pickedFile;
     } else {

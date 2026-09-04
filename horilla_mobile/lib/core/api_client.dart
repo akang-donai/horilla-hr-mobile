@@ -96,7 +96,8 @@ class ApiClient {
     req.headers['Authorization'] = 'Bearer $_access';
     req.fields.addAll(fields);
     for (final e in files.entries) {
-      req.files.add(await http.MultipartFile.fromPath(e.key, e.value));
+      req.files.add(await http.MultipartFile.fromPath(e.key, e.value,
+          filename: uploadFilename(e.value)));
     }
     final res = await httpClient.send(req).timeout(_timeout);
     if (res.statusCode == 401 && !retried && !path.startsWith('/api/auth/')) {
@@ -151,4 +152,19 @@ class ApiClient {
     _access = null;
     _refresh = null;
   }
+}
+
+/// Filename to send for an uploaded file.
+///
+/// image_picker re-encodes to JPEG but may keep the source name, so an Android
+/// HEIC pick arrives as JPEG bytes called `.heic`. Django's ImageField checks
+/// the extension as well as the content and rejects it, so anything outside
+/// the web-image set is renamed to `.jpg`.
+String uploadFilename(String path) {
+  const webImage = {'jpg', 'jpeg', 'png', 'webp', 'gif'};
+  final base = path.split('/').last;
+  final dot = base.lastIndexOf('.');
+  final ext = dot == -1 ? '' : base.substring(dot + 1).toLowerCase();
+  if (webImage.contains(ext)) return base;
+  return '${dot == -1 ? base : base.substring(0, dot)}.jpg';
 }
