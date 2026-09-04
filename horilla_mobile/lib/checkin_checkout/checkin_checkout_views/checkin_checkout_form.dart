@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:horilla/checkin_checkout/checkin_checkout_views/stopwatch.dart';
+import 'package:nira/checkin_checkout/checkin_checkout_views/stopwatch.dart';
 import 'package:permission_handler/permission_handler.dart' as AppSettings;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';

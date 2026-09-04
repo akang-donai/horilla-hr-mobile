@@ -1650,7 +1650,7 @@ class _AttendanceRequest extends State<AttendanceRequest>
                   child: SizedBox(
                     width: 80,
                     height: 80,
-                    child: Image.asset('Assets/horilla-logo.png'),
+                    child: Image.asset('Assets/nira-logo.png'),
                   ),
                 ),
               ),

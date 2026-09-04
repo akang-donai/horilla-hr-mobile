@@ -79,7 +79,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings('@mipmap/horilla_logo');
+  AndroidInitializationSettings('@mipmap/ic_launcher');
 
   final DarwinInitializationSettings initializationSettingsIOS =
   DarwinInitializationSettings(
@@ -293,7 +293,7 @@ class LoginApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Login Page',
+      title: 'NIRA',
       navigatorKey: navigatorKey,
       home: FutureBuilderPage(),
       routes: {
@@ -331,7 +331,7 @@ class SplashScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              'Assets/horilla-logo.png',
+              'Assets/nira-logo.png',
               width: 150,
               height: 150,
             ),

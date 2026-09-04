@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:horilla/employee_views/rotating_shift.dart';
-import 'package:horilla/employee_views/rotating_work_type.dart';
-import 'package:horilla/employee_views/shift_request.dart';
-import 'package:horilla/employee_views/work_type_request.dart';
+import 'package:nira/employee_views/rotating_shift.dart';
+import 'package:nira/employee_views/rotating_work_type.dart';
+import 'package:nira/employee_views/shift_request.dart';
+import 'package:nira/employee_views/work_type_request.dart';
 import '../core/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';

@@ -2426,7 +2426,7 @@ class _LeaveRequest extends State<LeaveRequest>
                           width: 80,
                           height: 80,
                           child: Image.asset(
-                            'Assets/horilla-logo.png',
+                            'Assets/nira-logo.png',
                           ),
                         ),
                       ),
@@ -2453,7 +2453,7 @@ class _LeaveRequest extends State<LeaveRequest>
                           width: 80,
                           height: 80,
                           child: Image.asset(
-                            'Assets/horilla-logo.png',
+                            'Assets/nira-logo.png',
                           ),
                         ),
                       ),

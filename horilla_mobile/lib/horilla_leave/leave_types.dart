@@ -272,7 +272,7 @@ class _LeaveTypes extends State<LeaveTypes> {
                         width: 80,
                         height: 80,
                         child: Image.asset(
-                          'Assets/horilla-logo.png',
+                          'Assets/nira-logo.png',
                         ),
                       ),
                     ),
@@ -299,7 +299,7 @@ class _LeaveTypes extends State<LeaveTypes> {
                         width: 80,
                         height: 80,
                         child: Image.asset(
-                          'Assets/horilla-logo.png',
+                          'Assets/nira-logo.png',
                         ),
                       ),
                     ),

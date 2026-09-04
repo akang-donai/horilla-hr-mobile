@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:horilla/horilla_main/home.dart';
+import 'package:nira/horilla_main/home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';

@@ -1,4 +1,4 @@
-package com.cybrosys.horilla_project
+package id.co.mizutech.nira
 
 import io.flutter.embedding.android.FlutterActivity
 

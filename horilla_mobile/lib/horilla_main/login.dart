@@ -154,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
                       color: Colors.white,
                       padding: const EdgeInsets.fromLTRB(10, 5, 10, 15),
                       child: Image.asset(
-                        'Assets/horilla-logo.png',
+                        'Assets/nira-logo.png',
                         height: MediaQuery.of(context).size.height * 0.11,
                         width: MediaQuery.of(context).size.height * 0.11,
                         fit: BoxFit.contain,

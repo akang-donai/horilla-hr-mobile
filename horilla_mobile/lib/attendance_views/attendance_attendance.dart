@@ -3036,7 +3036,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
                   child: SizedBox(
                     width: 80,
                     height: 80,
-                    child: Image.asset('Assets/horilla-logo.png'),
+                    child: Image.asset('Assets/nira-logo.png'),
                   ),
                 ),
               ),
@@ -3083,7 +3083,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
                   child: SizedBox(
                     width: 80,
                     height: 80,
-                    child: Image.asset('Assets/horilla-logo.png'),
+                    child: Image.asset('Assets/nira-logo.png'),
                   ),
                 ),
               ),
