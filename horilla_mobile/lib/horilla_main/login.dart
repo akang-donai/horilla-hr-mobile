@@ -19,7 +19,9 @@ class _LoginPageState extends State<LoginPage> {
   var isDeviceConnected = false;
   bool isAlertSet = false;
   bool _passwordVisible = false;
-  final TextEditingController serverController = TextEditingController();
+  /// Fixed deployment. The server field used to be typed in on every login;
+  /// this build targets one instance, so there is nothing to get wrong.
+  static const String _serverAddress = 'https://hris.mizutech.co.id';
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   double horizontalMargin = 0.0;
@@ -41,20 +43,7 @@ class _LoginPageState extends State<LoginPage> {
 
 
   Future<void> _login() async {
-    String serverAddress = serverController.text.trim();
-    if (serverAddress.endsWith('/')) {
-      serverAddress = serverAddress.substring(0, serverAddress.length - 1);
-    }
-    if (serverAddress.startsWith('http://')) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Server address must use https://'),
-        backgroundColor: Colors.red,
-      ));
-      return;
-    }
-    if (!serverAddress.startsWith('https://')) {
-      serverAddress = 'https://$serverAddress';
-    }
+    const String serverAddress = _serverAddress;
     String username = usernameController.text.trim();
     String password = passwordController.text.trim();
 
@@ -120,13 +109,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final String? serverAddress =
-    ModalRoute.of(context)?.settings.arguments as String?;
-
-    if (serverAddress != null && serverController.text.isEmpty) {
-      serverController.text = serverAddress;
-    }
-
     return WillPopScope(
       onWillPop: () async {
         SystemNavigator.pop();
@@ -154,7 +136,7 @@ class _LoginPageState extends State<LoginPage> {
                       color: Colors.white,
                       padding: const EdgeInsets.fromLTRB(10, 5, 10, 15),
                       child: Image.asset(
-                        'Assets/nira-logo.png',
+                        'Assets/nira-login-logo.png',
                         height: MediaQuery.of(context).size.height * 0.11,
                         width: MediaQuery.of(context).size.height * 0.11,
                         fit: BoxFit.contain,
@@ -199,12 +181,6 @@ class _LoginPageState extends State<LoginPage> {
                               fontWeight: FontWeight.bold,
                               fontSize: 20,
                             ),
-                          ),
-                          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                          _buildTextFormField(
-                            'Server Address',
-                            serverController,
-                            false,
                           ),
                           SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                           _buildTextFormField(
