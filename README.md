@@ -1,6 +1,7 @@
-# Horilla Mobile App  
+<img width="2048" height="768" alt="Logo NIRA - HRIS" src="https://github.com/user-attachments/assets/8579e803-d9a1-431c-8f74-9e2d393a8af7" />
+# NIRA Mobile App  
 
-Horilla is an open-source Human Resource Management System (HRMS). The Horilla mobile application is developed using **Dart** and **Flutter**. This app is designed to streamline employee management, attendance tracking, and leave management for organizations of any size.  
+NIRA is an open-source Human Resource Management System (HRMS). The NIRA mobile application is developed using **Dart** and **Flutter**. This app is designed to streamline employee management, attendance tracking, and leave management for organizations of any size.  
 
 ---
 
