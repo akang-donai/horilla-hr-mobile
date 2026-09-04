@@ -609,7 +609,9 @@ class _LeaveOverview extends State<LeaveOverview>
           },
         ),
       ),
-      extendBody: true,
+      // The MaterialApp.builder in main.dart already lifts every route above
+      // the system gesture bar; extending the body under it double-counts.
+      extendBody: false,
       bottomNavigationBar: (bottomBarPages.length <= maxCount)
           ? AnimatedNotchBottomBar(
         /// Provide NotchBottomBarController

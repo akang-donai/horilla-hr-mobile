@@ -1080,20 +1080,23 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
   }
 
   Future<void> _pickImage(int id) async {
-    isLoadingImage = true;
     XFile? file = await uploadFile(context);
-    if (file != null) {
-      setState(() async {
-        pickedFile = file;
-        fileName = file.name;
-        filePath = file.path;
-        checkFile = true;
-        Map<String, dynamic> updatedDetails = {
-          "id": id,
-        };
-        await updateEmployeeImage(
-            updatedDetails, checkFile, fileName, filePath);
-      });
+    if (file == null) return;
+    if (!mounted) return;
+    // setState takes a synchronous callback: an async body returns a Future
+    // that Flutter discards, so the upload never ran and its errors were
+    // swallowed. Commit the state synchronously, then await the upload.
+    setState(() {
+      isLoadingImage = true;
+      pickedFile = file;
+      fileName = file.name;
+      filePath = file.path;
+      checkFile = true;
+    });
+    try {
+      await updateEmployeeImage({"id": id}, checkFile, fileName, filePath);
+    } finally {
+      if (mounted) setState(() => isLoadingImage = false);
     }
   }
 
@@ -3298,7 +3301,10 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
     // address in the work-email field, disagreeing with the web profile.
     workEmailController.text =
         employeeWorkInfoRecord['email']?.toString() ?? '';
-    workPhoneController.text = employeeDetails['phone'] ?? '';
+    // Company phone is work_information.mobile, not the employee's personal
+    // phone. Same copy-paste defect the work-email field had.
+    workPhoneController.text =
+        employeeWorkInfoRecord['mobile']?.toString() ?? '';
     final args =
     ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     bool permissionCheck = args?['permission_check'] ?? false;

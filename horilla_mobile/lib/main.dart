@@ -295,6 +295,24 @@ class LoginApp extends StatelessWidget {
     return MaterialApp(
       title: 'NIRA',
       navigatorKey: navigatorKey,
+      builder: (context, child) {
+        // Android 15+ enforces edge-to-edge, so the system gesture bar draws
+        // over the bottom of every route. Inset once here rather than in each
+        // of the 20 screens that carry a bottom navigation bar, and strip the
+        // padding from the inner MediaQuery so nested widgets do not inset
+        // a second time.
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(
+            viewPadding: mq.viewPadding.copyWith(bottom: 0),
+            padding: mq.padding.copyWith(bottom: 0),
+          ),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: mq.viewPadding.bottom),
+            child: child!,
+          ),
+        );
+      },
       home: FutureBuilderPage(),
       routes: {
         '/login': (context) => LoginPage(),
