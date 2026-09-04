@@ -12,6 +12,7 @@ import '../../core/api_client.dart';
 import '../../core/clock_service.dart';
 import '../../horilla_main/home.dart';
 import 'face_capture_screen.dart';
+import 'slide_to_clock_button.dart';
 import 'package:intl/intl.dart';
 
 
@@ -473,17 +474,14 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
     });
   }
 
-  Future<void> _handleSwipe(DragEndDetails details) async {
+  Future<void> _handleSwipe({required bool checkingIn}) async {
     if (_isProcessingDrag) return;
-
-    final double vx = details.velocity.pixelsPerSecond.dx;
-    if (vx.abs() < 100) return; // ignore taps and stray vertical drags
-    final bool checkingIn = vx > 0;
-
-    // Swiping the direction we are already in is a no-op.
+    // The slider only offers the direction opposite to the current state,
+    // but guard anyway so a stale rebuild cannot request a no-op.
     if (checkingIn == clockCheckedIn) return;
 
     _isProcessingDrag = true;
+    setState(() {});
     try {
       final selfiePath = await Navigator.push<String>(
         context,
@@ -529,6 +527,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
       // Always clear, so an early return or a thrown exception cannot strand
       // the guard and kill the swipe for the rest of the session.
       _isProcessingDrag = false;
+      if (mounted) setState(() {});
     }
   }
 
@@ -1070,61 +1069,12 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
           ),
         ),
         SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-        GestureDetector(
-          // One callback per completed gesture. onPanUpdate fired on every
-          // pointer movement, so the in-flight guard below had to survive
-          // dozens of re-entries and never reliably cleared once the camera
-          // screen interrupted the gesture, leaving the swipe permanently dead.
-          onHorizontalDragEnd: (details) => _handleSwipe(details),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.95,
-              height: MediaQuery.of(context).size.height * 0.07,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.0),
-                color: clockCheckedIn ? Colors.red : Colors.green,
-              ),
-              alignment: Alignment.center,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Show forward arrow only when NOT checked in
-                  if (!clockCheckedIn)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        width: MediaQuery.of(context).size.width * 0.12,
-                        height: MediaQuery.of(context).size.height * 0.06,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.0), color: Colors.white),
-                        child: const Icon(Icons.arrow_forward, color: Colors.green, size: 30.0),
-                      ),
-                    ),
-
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        swipeDirection,
-                        style: const TextStyle(color: Colors.white, fontSize: 15.0, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-
-                  // Show backward arrow only when checked in
-                  if (clockCheckedIn)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        width: MediaQuery.of(context).size.width * 0.12,
-                        height: MediaQuery.of(context).size.height * 0.06,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.0), color: Colors.white),
-                        child: const Icon(Icons.arrow_back, color: Colors.red, size: 30.0),
-                      ),
-                    )
-                ],
-              ),
-            ),
-          ),
+        SlideToClockButton(
+          checkedIn: clockCheckedIn,
+          label: swipeDirection,
+          enabled: !_isProcessingDrag,
+          onConfirmed: ({required bool checkingIn}) =>
+              _handleSwipe(checkingIn: checkingIn),
         ),
       ],
     );
