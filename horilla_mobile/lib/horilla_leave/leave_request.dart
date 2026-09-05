@@ -1249,9 +1249,15 @@ class _LeaveRequest extends State<LeaveRequest>
     for (var leaveType in leaveTypes) {
       if (leaveType['name'] == createdDetails['leave_type']) {}
     }
+    // /api/leave/request/ is admin-only and 403s for an ordinary employee.
+    // user-request/ is the self-service endpoint; it forces employee_id to the
+    // caller, so an employee can only file their own leave.
+    final path = permissionLeaveRequestCheck
+        ? '/api/leave/request/'
+        : '/api/leave/user-request/';
     var response = await ApiClient.instance.multipart(
       'POST',
-      '/api/leave/request/',
+      path,
       fields: {
         'employee_id': createdDetails['employee_id'].toString(),
         'description': createdDetails['description'],
@@ -1301,8 +1307,15 @@ class _LeaveRequest extends State<LeaveRequest>
           _errorMessage = errorJson["non_field_errors"].join(", ");
         } else if (errorJson.containsKey("leave_type_id")) {
           _errorMessage = "Leave Type field is required";
+        } else if (errorJson.containsKey("error")) {
+          // Permission and similar failures report under "error"; showing
+          // "An unknown error occurred." hid a plain 403 here.
+          _errorMessage = errorJson["error"].toString();
+        } else if (errorJson.containsKey("detail")) {
+          _errorMessage = errorJson["detail"].toString();
         } else {
-          _errorMessage = "An unknown error occurred.";
+          _errorMessage =
+              "Could not save the request (${response.statusCode}).";
         }
       });
     }
