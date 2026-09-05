@@ -683,9 +683,28 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
     }
   }
 
+  /// Whether this user may record attendance for someone else.
+  /// Resolved here so it cannot depend on initState ordering.
+  bool _canAddForOthers = false;
+
+  Future<void> _resolveAttendanceScope() async {
+    try {
+      final res = await ApiClient.instance
+          .get('/api/attendance/permission-check/attendance');
+      _canAddForOthers = res.statusCode == 200;
+    } catch (_) {
+      // Fail closed: offer only the signed-in employee.
+      _canAddForOthers = false;
+    }
+  }
+
   Future<void> getEmployees() async {
     employeeItems.clear();
     employeeIdMap.clear();
+
+    await _resolveAttendanceScope();
+    final prefs = await SharedPreferences.getInstance();
+    final ownId = prefs.getInt('employee_id');
 
     for (var page = 1;; page++) {
       print('Fetching employee page: $page');
@@ -693,10 +712,17 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final results = data['results'];
+        var results = List<Map<String, dynamic>>.from(data['results']);
 
         // ✅ Break when no more employees are returned
         if (results.isEmpty) break;
+
+        // Without attendance-admin rights a user may only record their own
+        // attendance, so listing colleagues offers a choice that is not real.
+        if (!_canAddForOthers && ownId != null) {
+          results = results.where((e) => e['id'] == ownId).toList();
+          if (results.isEmpty) continue;
+        }
 
         setState(() {
           for (var employee in results) {
@@ -708,6 +734,9 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
             employeeIdMap[fullName] = employeeId;
           }
         });
+
+        // Only the signed-in employee was wanted and has been found.
+        if (!_canAddForOthers && employeeItems.isNotEmpty) break;
       } else {
         print("Error fetching employees: ${response.statusCode}");
         break;

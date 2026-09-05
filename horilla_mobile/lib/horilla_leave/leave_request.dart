@@ -62,7 +62,10 @@ class _LeaveRequest extends State<LeaveRequest>
   final TextEditingController _typeAheadEmployeeEditController =
   TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  late Map<String, dynamic> arguments;
+  // Not late: prefetchData only assigns this on a 200, and the leave lists
+  // read it while normalising records, which would throw before the fetch
+  // lands or if it fails.
+  Map<String, dynamic> arguments = {};
   bool isAction = true;
   bool permissionLeaveTypeCheck = false;
   bool permissionLeaveAssignCheck = false;
@@ -580,6 +583,24 @@ class _LeaveRequest extends State<LeaveRequest>
   String get _leaveRequestPath => permissionLeaveRequestCheck
       ? '/api/leave/request/'
       : '/api/leave/user-request/';
+
+  /// Fill in the employee a leave record belongs to.
+  ///
+  /// /api/leave/user-request/ returns only the caller's own leave and leaves
+  /// the employee implicit, so records arrive without employee_id. The list
+  /// widgets read record['employee_id']['full_name'], so supply the signed-in
+  /// employee here rather than null-guarding every one of those reads.
+  Map<String, dynamic> _withOwnEmployee(Map<String, dynamic> record) {
+    if (record['employee_id'] is Map) return record;
+    return {
+      ...record,
+      'employee_id': {
+        'full_name': arguments['employee_name'] ?? '',
+        'employee_profile': arguments['employee_profile'] ?? '',
+        'badge_id': arguments['badge_id'] ?? '',
+      },
+    };
+  }
 
   /// Restrict a fetched employee list to the signed-in employee unless this
   /// user may file leave for others. Without leave-admin rights the server
@@ -2164,7 +2185,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
       if (response.statusCode == 200) {
         final results = (jsonDecode(response.body)['results'] as List)
-            .map((e) => Map<String, dynamic>.from(e))
+            .map((e) => _withOwnEmployee(Map<String, dynamic>.from(e)))
             .toList();
 
         setState(() {
@@ -2205,9 +2226,9 @@ class _LeaveRequest extends State<LeaveRequest>
         var response = await ApiClient.instance.get('$_leaveRequestPath?search=$searchText');
     if (response.statusCode == 200) {
       setState(() {
-        myAllPagesRequests = List<Map<String, dynamic>>.from(
-          jsonDecode(response.body)['results'],
-        );
+        myAllPagesRequests = (jsonDecode(response.body)['results'] as List)
+            .map((e) => _withOwnEmployee(Map<String, dynamic>.from(e)))
+            .toList();
         isLoading = false;
       });
     }
@@ -2227,7 +2248,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
     if (response.statusCode == 200) {
       final results = (jsonDecode(response.body)['results'] as List)
-          .map((e) => Map<String, dynamic>.from(e))
+          .map((e) => _withOwnEmployee(Map<String, dynamic>.from(e)))
           .toList();
 
       if (results.isEmpty) {
@@ -2265,7 +2286,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
     if (response.statusCode == 200) {
       final results = (jsonDecode(response.body)['results'] as List)
-          .map((e) => Map<String, dynamic>.from(e))
+          .map((e) => _withOwnEmployee(Map<String, dynamic>.from(e)))
           .toList();
 
       if (results.isEmpty) {
@@ -2303,7 +2324,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
     if (response.statusCode == 200) {
       final results = (jsonDecode(response.body)['results'] as List)
-          .map((e) => Map<String, dynamic>.from(e))
+          .map((e) => _withOwnEmployee(Map<String, dynamic>.from(e)))
           .toList();
 
       if (results.isEmpty) {
@@ -2341,7 +2362,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
     if (response.statusCode == 200) {
       final results = (jsonDecode(response.body)['results'] as List)
-          .map((e) => Map<String, dynamic>.from(e))
+          .map((e) => _withOwnEmployee(Map<String, dynamic>.from(e)))
           .toList();
 
       if (results.isEmpty) {
