@@ -194,6 +194,10 @@ class _AttendanceOverviewState extends State<AttendanceOverview>
         }
         nextPageUrl = data['next'];
       });
+    } else {
+      // 403 here is expected for an employee without the attendance
+      // overview permission; clear the shimmer instead of spinning forever.
+      if (mounted) setState(() => _isShimmerVisible = false);
     }
   }
 
@@ -217,6 +221,15 @@ class _AttendanceOverviewState extends State<AttendanceOverview>
         offlineEmpCount = jsonDecode(response.body)['count'].toString();
         isLoading = false;
       });
+    } else {
+      // Not permitted to see the company-wide count: show none rather than
+      // leaving the screen loading.
+      if (mounted) {
+        setState(() {
+          offlineEmpCount = '0';
+          isLoading = false;
+        });
+      }
     }
   }
 
