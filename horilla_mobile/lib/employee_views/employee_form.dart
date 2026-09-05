@@ -1082,14 +1082,40 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
     }
   }
 
+  /// Ask whether to take a new photo or pick an existing one.
+  /// Returns null if the sheet is dismissed without choosing.
+  Future<ImageSource?> _chooseImageSource(BuildContext context) {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<XFile?> uploadFile(BuildContext context) async {
+    final source = await _chooseImageSource(context);
+    if (source == null) return null; // dismissed, not an error
     final picker = ImagePicker();
     // Android cameras default to HEIC, which the server's Pillow cannot
     // decode ("not an image or a corrupted image"). Passing imageQuality
     // forces image_picker to re-encode to JPEG, and the size cap keeps a
     // multi-megabyte camera original from being uploaded at full resolution.
     final XFile? pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       imageQuality: 85,
       maxWidth: 1440,
       maxHeight: 1440,

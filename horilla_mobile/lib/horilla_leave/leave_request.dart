@@ -576,6 +576,13 @@ class _LeaveRequest extends State<LeaveRequest>
     });
   }
 
+  /// Whether this user may approve or reject somebody's leave.
+  ///
+  /// The server already enforces it: the approve and reject endpoints carry
+  /// manager_permission_required, so a requester tapping these buttons only
+  /// ever got a 403. check-request uses the same decorator family, which is
+  /// what makes it the right signal for "a superior or an admin".
+  bool get _canDecideRequests => permissionLeaveRequestCheck;
   /// Leave-request collection this user is allowed to read.
   ///
   /// /api/leave/request/ is admin-only and answers 403 for an ordinary
@@ -3695,7 +3702,7 @@ class _LeaveRequest extends State<LeaveRequest>
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             Visibility(
-                              visible: record['status'] != 'rejected' &&
+                              visible: _canDecideRequests && record['status'] != 'rejected' &&
                                   record['status'] != 'cancelled',
                               child: ElevatedButton(
                                 onPressed: () {
@@ -3795,7 +3802,7 @@ class _LeaveRequest extends State<LeaveRequest>
                               ),
                             ),
                             Visibility(
-                              visible: record['status'] != 'rejected' &&
+                              visible: _canDecideRequests && record['status'] != 'rejected' &&
                                   record['status'] != 'cancelled',
                               child: ElevatedButton(
                                 onPressed: record['status'] == 'approved' ||
@@ -3911,7 +3918,7 @@ class _LeaveRequest extends State<LeaveRequest>
                               ),
                             ),
                             Visibility(
-                              visible: record['status'] == 'cancelled',
+                              visible: _canDecideRequests && record['status'] == 'cancelled',
                               child: ElevatedButton(
                                 onPressed: () {
                                   isSaveClick = true;
@@ -4344,7 +4351,7 @@ class _LeaveRequest extends State<LeaveRequest>
                       Row(
                         children: [
                           Visibility(
-                            visible: record['status'] != 'rejected' &&
+                            visible: _canDecideRequests && record['status'] != 'rejected' &&
                                 record['status'] != 'cancelled',
                             child: ElevatedButton(
                               onPressed: () {
@@ -4450,7 +4457,7 @@ class _LeaveRequest extends State<LeaveRequest>
                           SizedBox(
                               width: MediaQuery.of(context).size.width * 0.03),
                           Visibility(
-                            visible: record['status'] != 'rejected' &&
+                            visible: _canDecideRequests && record['status'] != 'rejected' &&
                                 record['status'] != 'cancelled',
                             child: ElevatedButton(
                               onPressed: record['status'] == 'approved' ||
@@ -4561,7 +4568,7 @@ class _LeaveRequest extends State<LeaveRequest>
                             ),
                           ),
                           Visibility(
-                            visible: record['status'] == 'cancelled',
+                            visible: _canDecideRequests && record['status'] == 'cancelled',
                             child: ElevatedButton(
                               onPressed: () {
                                 isSaveClick = true;
