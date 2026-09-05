@@ -179,10 +179,12 @@ class _LeaveRequest extends State<LeaveRequest>
     try {
       await prefetchData();
       await getBaseUrl();
+      // Before the employee picker and the request lists, both of which
+      // behave differently for an employee without leave-admin rights.
+      await checkPermissions();
       await getEmployees();
       await getListEmployees();
       await getAllEmployeesName();
-      await checkPermissions();
 
       await Future.wait([
         getAllLeaveRequest(reset: true),
@@ -571,14 +573,38 @@ class _LeaveRequest extends State<LeaveRequest>
     });
   }
 
+  /// Leave-request collection this user is allowed to read.
+  ///
+  /// /api/leave/request/ is admin-only and answers 403 for an ordinary
+  /// employee, which left the list empty even though the request was created.
+  String get _leaveRequestPath => permissionLeaveRequestCheck
+      ? '/api/leave/request/'
+      : '/api/leave/user-request/';
+
+  /// Restrict a fetched employee list to the signed-in employee unless this
+  /// user may file leave for others. Without leave-admin rights the server
+  /// files the request for the caller whatever is sent, so offering other
+  /// names invites a request that silently belongs to someone else.
+  Future<List<Map<String, dynamic>>> _visibleEmployees(
+      List<Map<String, dynamic>> employees) async {
+    if (permissionLeaveRequestCheck) return employees;
+    final prefs = await SharedPreferences.getInstance();
+    final ownId = prefs.getInt('employee_id');
+    if (ownId == null) return employees;
+    return employees.where((e) => e['id'] == ownId).toList();
+  }
+
   Future<void> getEmployees() async {
     final prefs = await SharedPreferences.getInstance();
         var response = await ApiClient.instance.get('/api/employee/employee-selector');
 
     if (response.statusCode == 200) {
+      final rows = List<Map<String, dynamic>>.from(
+          jsonDecode(response.body)['results']);
+      final visible = await _visibleEmployees(rows);
       setState(() {
         employeeItem.clear();
-        for (var employee in jsonDecode(response.body)['results']) {
+        for (var employee in visible) {
           String fullName =
               "${employee['employee_first_name']} ${employee['employee_last_name']}";
           String employeeId = "${employee['id']}";
@@ -1228,8 +1254,10 @@ class _LeaveRequest extends State<LeaveRequest>
           break;
         }
 
+        final visible =
+            await _visibleEmployees(List<Map<String, dynamic>>.from(results));
         setState(() {
-          for (var employee in results) {
+          for (var employee in visible) {
             var employeeName = "${employee['employee_first_name'] ?? ''} ${employee['employee_last_name'] ?? ''}".trim();
             allEmployeeNames.add(employeeName);
           }
@@ -2132,7 +2160,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      var response = await ApiClient.instance.get('/api/leave/request?page=$currentPage${searchText.isNotEmpty ? '&search=$searchText' : ''}');
+      var response = await ApiClient.instance.get('$_leaveRequestPath?page=$currentPage${searchText.isNotEmpty ? '&search=$searchText' : ''}');
 
       if (response.statusCode == 200) {
         final results = (jsonDecode(response.body)['results'] as List)
@@ -2174,7 +2202,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
   Future<void> getAllPagesLeaveRequest() async {
     final prefs = await SharedPreferences.getInstance();
-        var response = await ApiClient.instance.get('/api/leave/request?search=$searchText');
+        var response = await ApiClient.instance.get('$_leaveRequestPath?search=$searchText');
     if (response.statusCode == 200) {
       setState(() {
         myAllPagesRequests = List<Map<String, dynamic>>.from(
@@ -2195,7 +2223,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
     if (!hasMoreRequested) return;
 
-        var response = await ApiClient.instance.get('/api/leave/request?status=requested&search=$searchText&page=$currentPage');
+        var response = await ApiClient.instance.get('$_leaveRequestPath?status=requested&search=$searchText&page=$currentPage');
 
     if (response.statusCode == 200) {
       final results = (jsonDecode(response.body)['results'] as List)
@@ -2233,7 +2261,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
     if (!hasMoreApproved) return;
 
-        var response = await ApiClient.instance.get('/api/leave/request?status=approved&search=$searchText&page=$currentPage');
+        var response = await ApiClient.instance.get('$_leaveRequestPath?status=approved&search=$searchText&page=$currentPage');
 
     if (response.statusCode == 200) {
       final results = (jsonDecode(response.body)['results'] as List)
@@ -2271,7 +2299,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
     if (!hasMoreCancelled) return;
 
-        var response = await ApiClient.instance.get('/api/leave/request?status=cancelled&search=$searchText&page=$currentPage');
+        var response = await ApiClient.instance.get('$_leaveRequestPath?status=cancelled&search=$searchText&page=$currentPage');
 
     if (response.statusCode == 200) {
       final results = (jsonDecode(response.body)['results'] as List)
@@ -2309,7 +2337,7 @@ class _LeaveRequest extends State<LeaveRequest>
 
     if (!hasMoreRejected) return;
 
-        var response = await ApiClient.instance.get('/api/leave/request?status=rejected&search=$searchText&page=$currentPage');
+        var response = await ApiClient.instance.get('$_leaveRequestPath?status=rejected&search=$searchText&page=$currentPage');
 
     if (response.statusCode == 200) {
       final results = (jsonDecode(response.body)['results'] as List)

@@ -279,19 +279,45 @@ class _AttendanceRequest extends State<AttendanceRequest>
     });
   }
 
+  /// Whether this user may raise an attendance request for someone else.
+  /// Resolved inside getEmployees so it cannot depend on initState ordering.
+  bool _canRequestForOthers = false;
+
+  Future<void> _resolveRequestScope() async {
+    try {
+      final res = await ApiClient.instance
+          .get('/api/attendance/permission-check/attendance');
+      _canRequestForOthers = res.statusCode == 200;
+    } catch (_) {
+      // Fail closed: offer only the signed-in employee.
+      _canRequestForOthers = false;
+    }
+  }
+
   Future<void> getEmployees() async {
     employeeItems.clear();
     employeeIdMap.clear();
     allEmployeeList.clear();
+
+    await _resolveRequestScope();
+    final prefs = await SharedPreferences.getInstance();
+    final ownId = prefs.getInt('employee_id');
 
     for (var page = 1;; page++) {
       var response = await ApiClient.instance.get('/api/employee/employee-selector?page=$page');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final results = List<Map<String, dynamic>>.from(data['results']);
+        var results = List<Map<String, dynamic>>.from(data['results']);
 
         if (results.isEmpty) break; // ✅ Stop if there are no more employees
+
+        // An employee without attendance-admin rights may only file for
+        // themselves, so listing colleagues offers a choice that is not real.
+        if (!_canRequestForOthers && ownId != null) {
+          results = results.where((e) => e['id'] == ownId).toList();
+          if (results.isEmpty) continue;
+        }
 
         setState(() {
           for (var employee in results) {
@@ -306,6 +332,10 @@ class _AttendanceRequest extends State<AttendanceRequest>
 
           allEmployeeList.addAll(results);
         });
+
+        // Only the signed-in employee was wanted and has been found; the
+        // remaining pages cannot contribute anything.
+        if (!_canRequestForOthers && employeeItems.isNotEmpty) break;
       } else {
         print('Error fetching employees (status: ${response.statusCode})');
         break;
