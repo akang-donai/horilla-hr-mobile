@@ -1151,6 +1151,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             const SizedBox(height: 50.0),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.folder_open),
+                title: const Text('Projects'),
+                subtitle: Text(
+                  'Track projects and their tasks.',
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+                trailing: const Icon(Icons.keyboard_arrow_right),
+                onTap: () {
+                  Navigator.pushNamed(context, '/projects');
+                },
+              ),
+            ),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.checklist_rtl),
                 title: const Text('Attendances'),
                 subtitle: Text(

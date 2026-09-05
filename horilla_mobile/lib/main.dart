@@ -28,6 +28,7 @@ import 'horilla_main/home.dart';
 import 'horilla_main/notifications_list.dart';
 import 'core/api_client.dart';
 import 'core/session.dart';
+import 'project_views/project_list.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
@@ -328,6 +329,7 @@ class LoginApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/home': (context) => HomePage(),
         '/employees_form': (context) => EmployeeFormPage(),
+        '/projects': (context) => const ProjectListPage(),
         '/attendance_overview': (context) => AttendanceOverview(),
         '/attendance_attendance': (context) => AttendanceAttendance(),
         '/attendance_request': (context) => AttendanceRequest(),
