@@ -103,15 +103,26 @@ Future<void> main() async {
     onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
   );
 
-  await ApiClient.instance.init();
+  // Nothing before runApp may throw: an exception here stops the app on the
+  // launcher icon with no UI and no way for the user to recover.
+  try {
+    await ApiClient.instance.init();
+  } catch (e) {
+    debugPrint('ApiClient.init failed, continuing signed out: $e');
+  }
   ApiClient.instance.onSessionExpired = () async {
     isAuthenticated = false;
     await Session.instance.clear();
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
   };
 
-  final access = await Session.instance.access;
-  isAuthenticated = access != null;
+  try {
+    final access = await Session.instance.access;
+    isAuthenticated = access != null;
+  } catch (e) {
+    debugPrint('session read failed, continuing signed out: $e');
+    isAuthenticated = false;
+  }
 
   if (isAuthenticated) {
     _startNotificationTimer();

@@ -33,8 +33,8 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = 35
-        versionCode = 5
-        versionName = "2.0.4"
+        versionCode = 6
+        versionName = "2.0.5"
     }
 
     val keystoreProperties = Properties()

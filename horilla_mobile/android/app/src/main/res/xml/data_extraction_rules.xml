@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Session tokens live in Keystore-backed storage. Restoring them onto another
+  install cannot work: the Keystore key does not travel with the backup, so the
+  restored blobs are undecryptable and the app has to discard them anyway.
+  Excluding the app entirely keeps tokens out of cloud backups as well.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="sharedpref" />
+        <exclude domain="database" />
+        <exclude domain="file" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="sharedpref" />
+        <exclude domain="database" />
+        <exclude domain="file" />
+    </device-transfer>
+</data-extraction-rules>
