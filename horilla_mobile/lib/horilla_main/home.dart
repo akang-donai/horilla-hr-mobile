@@ -1151,21 +1151,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             const SizedBox(height: 50.0),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.people),
-                title: const Text('Employees'),
-                subtitle: Text(
-                  'View and manage all your employees.',
-                  style: TextStyle(color: Colors.grey.shade700),
-                ),
-                trailing: const Icon(Icons.keyboard_arrow_right),
-                onTap: () {
-                  Navigator.pushNamed(context, '/employees_list',
-                      arguments: permissionCheck);
-                },
-              ),
-            ),
-            Card(
-              child: ListTile(
                 leading: const Icon(Icons.checklist_rtl),
                 title: const Text('Attendances'),
                 subtitle: Text(

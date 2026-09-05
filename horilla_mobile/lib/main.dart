@@ -16,7 +16,6 @@ import 'checkin_checkout/checkin_checkout_views/checkin_checkout_form.dart';
 import 'package:camera/camera.dart';
 import 'checkin_checkout/checkin_checkout_views/setup_imageface.dart';
 import 'employee_views/employee_form.dart';
-import 'employee_views/employee_list.dart';
 import 'horilla_leave/all_assigned_leave.dart';
 import 'horilla_leave/leave_allocation_request.dart';
 import 'horilla_leave/leave_overview.dart';
@@ -317,7 +316,6 @@ class LoginApp extends StatelessWidget {
       routes: {
         '/login': (context) => LoginPage(),
         '/home': (context) => HomePage(),
-        '/employees_list': (context) => EmployeeListPage(),
         '/employees_form': (context) => EmployeeFormPage(),
         '/attendance_overview': (context) => AttendanceOverview(),
         '/attendance_attendance': (context) => AttendanceAttendance(),
