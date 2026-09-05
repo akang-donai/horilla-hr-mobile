@@ -1462,10 +1462,16 @@ class _LeaveRequest extends State<LeaveRequest>
     }
   }
 
-  Future<void> deleteRequest(int leaveId) async {
-    final prefs = await SharedPreferences.getInstance();
-        var response = await ApiClient.instance.delete('/api/leave/request/$leaveId/');
-    if (response.statusCode == 200) {
+  /// Returns true only when the server actually deleted the request.
+  Future<bool> deleteRequest(int leaveId) async {
+    // /api/leave/request/ requires leave.delete_leaverequest and answers 403
+    // for an ordinary employee; user-request/ deletes the caller's own
+    // pending request. The caller used to report success either way.
+    final path = _canDecideRequests
+        ? '/api/leave/request/$leaveId/'
+        : '/api/leave/user-request/$leaveId/';
+    var response = await ApiClient.instance.delete(path);
+    if (response.statusCode == 200 || response.statusCode == 204) {
       isSaveClick = false;
       myAllRequests.removeWhere((item) => item['id'] == leaveId);
       requestedRecords.removeWhere((item) => item['id'] == leaveId);
@@ -1478,10 +1484,22 @@ class _LeaveRequest extends State<LeaveRequest>
       getCancelledCount();
       getRejectedCount();
       setState(() {});
+      return true;
     }
-    else {
-      isSaveClick = true;
+    isSaveClick = true;
+    String message = 'Could not delete the request (${response.statusCode}).';
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map && (body['error'] ?? body['detail']) != null) {
+        message = (body['error'] ?? body['detail']).toString();
+      }
+    } catch (_) {}
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
     }
+    return false;
   }
 
   Future<void> cancelRequest(int cancelId, String description) async {
@@ -4252,9 +4270,13 @@ class _LeaveRequest extends State<LeaveRequest>
                                                   if (isSaveClick == true) {
                                                     isSaveClick = false;
                                                     var leaveId = record['id'];
-                                                    await deleteRequest(leaveId);
+                                                    final deleted =
+                                                        await deleteRequest(
+                                                            leaveId);
                                                     Navigator.pop(context);
-                                                    showDeleteAnimation();
+                                                    if (deleted) {
+                                                      showDeleteAnimation();
+                                                    }
                                                   }
                                                 },
                                                 style: ButtonStyle(
