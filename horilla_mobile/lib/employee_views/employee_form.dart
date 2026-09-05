@@ -12,6 +12,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class EmployeeFormPage extends StatefulWidget {
@@ -47,6 +48,22 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
   String empId = '';
   String jobRuleName = '';
   String? _errorMessage;
+
+  /// Installed version, shown in the profile app bar so it is possible to tell
+  /// at a glance whether a device is running the current build. Read from the
+  /// package rather than a constant, which would go stale on the next release.
+  String _appVersion = '';
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _appVersion = 'v${info.version} (${info.buildNumber})');
+      }
+    } catch (_) {
+      // Version is informational; never let it break the screen.
+    }
+  }
   String? selectedCreateEmployeeId;
   String? selectedEditEmployeeId;
   String? selectedEditPositionId;
@@ -165,6 +182,7 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadAppVersion();
     prefetchData();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       getEmployeeDetails();
@@ -3369,6 +3387,20 @@ class _EmployeeFormPageState extends State<EmployeeFormPage>
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.red,
+        leadingWidth: 110,
+        leading: Center(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 12.0),
+            child: Text(
+              _appVersion,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
         actions: [
           if (checkManager)
             Visibility(
