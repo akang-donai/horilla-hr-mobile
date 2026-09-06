@@ -71,7 +71,13 @@ class ApiClient {
       {Object? jsonBody, bool retried = false}) async {
     final req = http.Request(method, _uri(path));
     req.headers.addAll(_headers());
-    if (jsonBody != null) req.body = jsonEncode(jsonBody);
+    if (jsonBody != null) {
+      // Callers are split between passing a Map and passing jsonEncode(map).
+      // Encoding a String again produces a JSON string literal rather than an
+      // object, which DRF hands to the serializer as a str and answers 500,
+      // so accept a body that is already encoded.
+      req.body = jsonBody is String ? jsonBody : jsonEncode(jsonBody);
+    }
     final res = await http.Response.fromStream(
         await httpClient.send(req).timeout(_timeout));
     if (res.statusCode == 401 &&

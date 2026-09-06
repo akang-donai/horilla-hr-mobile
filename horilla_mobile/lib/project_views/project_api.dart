@@ -90,9 +90,9 @@ class ProjectApi {
     };
     final res = id == null
         ? await ApiClient.instance
-            .post('/api/project/project/', jsonBody: jsonEncode(body))
+            .post('/api/project/project/', jsonBody: body)
         : await ApiClient.instance
-            .put('/api/project/project/$id/', jsonBody: jsonEncode(body));
+            .put('/api/project/project/$id/', jsonBody: body);
     return ApiResult.from(res.statusCode, res.body, const [200, 201]);
   }
 
@@ -122,9 +122,9 @@ class ProjectApi {
     };
     final res = id == null
         ? await ApiClient.instance
-            .post('/api/project/task/', jsonBody: jsonEncode(body))
+            .post('/api/project/task/', jsonBody: body)
         : await ApiClient.instance
-            .put('/api/project/task/$id/', jsonBody: jsonEncode(body));
+            .put('/api/project/task/$id/', jsonBody: body);
     return ApiResult.from(res.statusCode, res.body, const [200, 201]);
   }
 

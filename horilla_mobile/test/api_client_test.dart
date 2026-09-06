@@ -87,6 +87,38 @@ void main() {
     expect(expired, isFalse, reason: 'must not log the user out');
   });
 
+  test('a pre-encoded json body is not encoded twice', () async {
+    // Half the call sites pass jsonEncode(map), half pass the map. Encoding a
+    // String again yields a JSON string literal, which DRF hands to the
+    // serializer as a str and answers 500.
+    late http.Request seen;
+    ApiClient.instance.configureForTest(
+        baseUrl: 'https://hr.example.com', access: 'AT', refresh: 'RT');
+    ApiClient.instance.httpClient = MockClient((req) async {
+      seen = req;
+      return http.Response('{}', 200);
+    });
+
+    await ApiClient.instance
+        .post('/api/project/task/', jsonBody: jsonEncode({'title': 'x'}));
+    expect(seen.body, '{"title":"x"}');
+    expect(jsonDecode(seen.body), isA<Map<String, dynamic>>());
+  });
+
+  test('a map body is encoded once', () async {
+    late http.Request seen;
+    ApiClient.instance.configureForTest(
+        baseUrl: 'https://hr.example.com', access: 'AT', refresh: 'RT');
+    ApiClient.instance.httpClient = MockClient((req) async {
+      seen = req;
+      return http.Response('{}', 200);
+    });
+
+    await ApiClient.instance.put('/api/x/1/', jsonBody: {'title': 'x'});
+    expect(seen.body, '{"title":"x"}');
+    expect(jsonDecode(seen.body), isA<Map<String, dynamic>>());
+  });
+
   group('uploadFilename', () {
     test('keeps web image extensions', () {
       expect(uploadFilename('/tmp/pic.jpg'), 'pic.jpg');
