@@ -219,6 +219,9 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
           clockCheckBool = true;
           DateTime now = DateTime.now();
           timeDisplay = clockIn;
+          // Used to be assigned at the top of the build methods, which undid
+          // any fresher value the moment the widget rebuilt.
+          checkInFormattedTime = clockIn;
           checkInFormattedTimeTopR = DateFormat('h:mm').format(now);
           Duration clockInTime = Duration.zero;
           String? clockTimeString = duration;
@@ -235,6 +238,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
       clockCheckedIn = false;
       clockCheckBool = false;
       timeDisplay = clockInTimes;
+      checkInFormattedTime = clockInTimes;
       Duration clockInTime = Duration.zero;
       String? clockTimeString = duration;
       elapsedTimeString = duration ?? '';
@@ -539,6 +543,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
         clockCheckBool = true;
         DateTime now = DateTime.now();
         checkInFormattedTime = DateFormat('h:mm a').format(now);
+        timeDisplay = checkInFormattedTime;
         checkInFormattedTimeTopR = DateFormat('h:mm').format(now);
         _saveClockState(clockCheckedIn, 1, checkInFormattedTime.toString());
 
@@ -644,7 +649,6 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
   }
 
   Widget _buildLoadingWidget() {
-    checkInFormattedTime = timeDisplay;
     return ListView(
       children: [
         if (clockCheckBool || clockCheckedIn)
@@ -845,7 +849,6 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
   }
 
   Widget _buildCheckInCheckoutWidget(token) {
-    checkInFormattedTime = timeDisplay;
     return ListView(
       children: [
         if (clockCheckBool || clockCheckedIn)
