@@ -386,7 +386,7 @@ class _SelectedLeaveType extends State<SelectedLeaveType> {
                                   child: Image.network(
                                     baseUrl + typeDetails['icon'],
                                     headers: {
-                                      "Authorization": "Bearer $getToken", // Changed from token to getToken
+                                      "Authorization": "Bearer ${ApiClient.instance.accessToken}", // Changed from token to getToken
                                     },
                                     fit: BoxFit.cover,
                                     errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {

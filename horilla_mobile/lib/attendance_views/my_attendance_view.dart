@@ -181,7 +181,7 @@ class _MyAttendanceViews extends State<MyAttendanceViews>
                               child: Image.network(
                                 baseUrl + employeeProfile,
                                 headers: {
-                                  "Authorization": "Bearer $getToken",
+                                  "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                 },
                                 fit: BoxFit.cover,
                                 errorBuilder: (BuildContext context,

@@ -49,6 +49,11 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
   String? workingTime = '00:00:00';
   String? clockIn;
   String? clockInTimes;
+
+  /// Today's check-out time, or null when there has been no check-out today.
+  /// Filled only from the server or from a successful clock-out, so a stale
+  /// value restored from preferences can never label the row "Check-Out".
+  String? _checkOutToday;
   String? duration;
   String? timeDisplay;
   final StopwatchManager stopwatchManager = StopwatchManager();
@@ -258,12 +263,16 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
         setState(() {
           clockIn = true.toString();
           clockIn = responseBody['clock_in'];
+          _checkOutToday = null;
           duration = responseBody['duration'];
         });
       } else {
         setState(() {
           clockIn = false.toString();
-          clockInTimes = responseBody['clock_in_time'];
+          // The server reports this as clock_in; clock_in_time is the old key
+          // and has been absent since the checking-in endpoint was reworked.
+          clockInTimes = responseBody['clock_in'] ?? responseBody['clock_in_time'];
+          _checkOutToday = responseBody['clock_out'];
           duration = responseBody['duration'];
         });
       }
@@ -544,6 +553,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
         DateTime now = DateTime.now();
         checkInFormattedTime = DateFormat('h:mm a').format(now);
         timeDisplay = checkInFormattedTime;
+        _checkOutToday = null;
         checkInFormattedTimeTopR = DateFormat('h:mm').format(now);
         _saveClockState(clockCheckedIn, 1, checkInFormattedTime.toString());
 
@@ -571,6 +581,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
         clockCheckBool = false;
         DateTime now = DateTime.now();
         checkOutFormattedTime = DateFormat('h:mm a').format(now);
+        _checkOutToday = checkOutFormattedTime;
         swipeDirection = 'Swipe to Check-In';
         _saveClockState(clockCheckedIn, 2, checkOutFormattedTime.toString());
       }
@@ -1000,7 +1011,7 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
                                     child: Image.network(
                                       baseUrl + requestsEmpProfile,
                                       headers: {
-                                        "Authorization": "Bearer $token",
+                                        "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                       },
                                       fit: BoxFit.cover,
                                       errorBuilder: (context, exception, stackTrace) => const Icon(Icons.person, color: Colors.grey),
@@ -1050,8 +1061,12 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Check-In'),
-                          Text('$checkInFormattedTime'),
+                          Text(!clockCheckedIn && _checkOutToday != null
+                              ? 'Check-Out'
+                              : 'Check-In'),
+                          Text(!clockCheckedIn && _checkOutToday != null
+                              ? _checkOutToday!
+                              : (checkInFormattedTime ?? '00:00')),
                         ],
                       ),
                     ),

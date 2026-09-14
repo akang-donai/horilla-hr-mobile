@@ -1455,7 +1455,7 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
                                         baseUrl +
                                             record['employee_profile_url'],
                                         headers: {
-                                          "Authorization": "Bearer $token",
+                                          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                         },
                                         fit: BoxFit.cover,
                                         errorBuilder: (BuildContext context,
@@ -1646,7 +1646,7 @@ class _HourAccountFormPageState extends State<HourAccountFormPage> {
                                   child: Image.network(
                                     baseUrl + record['employee_profile_url'],
                                     headers: {
-                                      "Authorization": "Bearer $token",
+                                      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                     },
                                     fit: BoxFit.cover,
                                     errorBuilder: (BuildContext context,

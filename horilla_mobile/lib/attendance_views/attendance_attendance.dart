@@ -3976,7 +3976,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
                                         baseUrl +
                                             record['employee_profile_url'],
                                         headers: {
-                                          "Authorization": "Bearer $token",
+                                          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                         },
                                         fit: BoxFit.cover,
                                         errorBuilder: (BuildContext context,
@@ -4193,7 +4193,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
                                   child: Image.network(
                                     baseUrl + record['employee_profile_url'],
                                     headers: {
-                                      "Authorization": "Bearer $token",
+                                      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                     },
                                     fit: BoxFit.cover,
                                     errorBuilder: (BuildContext context,
@@ -4366,7 +4366,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
                                         baseUrl +
                                             record['employee_profile_url'],
                                         headers: {
-                                          "Authorization": "Bearer $token",
+                                          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                         },
                                         fit: BoxFit.cover,
                                         errorBuilder: (BuildContext context,
@@ -4681,7 +4681,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
                                   child: Image.network(
                                     baseUrl + record['employee_profile_url'],
                                     headers: {
-                                      "Authorization": "Bearer $token",
+                                      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                     },
                                     fit: BoxFit.cover,
                                     errorBuilder: (BuildContext context,
@@ -5108,7 +5108,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
                                         baseUrl +
                                             record['employee_profile_url'],
                                         headers: {
-                                          "Authorization": "Bearer $token",
+                                          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                         },
                                         fit: BoxFit.cover,
                                         errorBuilder: (BuildContext context,
@@ -5421,7 +5421,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
                                   child: Image.network(
                                     baseUrl + record['employee_profile_url'],
                                     headers: {
-                                      "Authorization": "Bearer $token",
+                                      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                     },
                                     fit: BoxFit.cover,
                                     errorBuilder: (BuildContext context,
@@ -5815,7 +5815,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
                                         baseUrl +
                                             record['employee_profile_url'],
                                         headers: {
-                                          "Authorization": "Bearer $token",
+                                          "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                         },
                                         fit: BoxFit.cover,
                                         errorBuilder: (BuildContext context,
@@ -6030,7 +6030,7 @@ class _AttendanceAttendance extends State<AttendanceAttendance>
                                   child: Image.network(
                                     baseUrl + record['employee_profile_url'],
                                     headers: {
-                                      "Authorization": "Bearer $token",
+                                      "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                     },
                                     fit: BoxFit.cover,
                                     errorBuilder: (BuildContext context,

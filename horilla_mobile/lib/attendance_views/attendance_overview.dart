@@ -984,7 +984,7 @@ Widget buildOfflineEmployeesTile(
                     child: Image.network(
                       baseUrl + record['employee_profile'],
                       headers: {
-                        "Authorization": "Bearer $token",
+                        "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                       },
                       fit: BoxFit.cover,
                       errorBuilder: (BuildContext context, Object exception,
@@ -1350,7 +1350,7 @@ Widget buildOvertimeValidate(
                                                           'employee_profile_url'],
                                                   headers: {
                                                     "Authorization":
-                                                        "Bearer $token",
+                                                        "Bearer ${ApiClient.instance.accessToken}",
                                                   },
                                                   fit: BoxFit.cover,
                                                   errorBuilder: (BuildContext
@@ -1661,7 +1661,7 @@ Widget buildOvertimeValidate(
                                             baseUrl +
                                                 record['employee_profile_url'],
                                             headers: {
-                                              "Authorization": "Bearer $token",
+                                              "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                             },
                                             fit: BoxFit.cover,
                                             errorBuilder: (BuildContext context,
@@ -1826,7 +1826,7 @@ Widget buildNonValidatedAttendance(
                                                           'employee_profile_url'],
                                                   headers: {
                                                     "Authorization":
-                                                        "Bearer $token",
+                                                        "Bearer ${ApiClient.instance.accessToken}",
                                                   },
                                                   fit: BoxFit.cover,
                                                   errorBuilder: (BuildContext
@@ -2134,7 +2134,7 @@ Widget buildNonValidatedAttendance(
                                             baseUrl +
                                                 record['employee_profile_url'],
                                             headers: {
-                                              "Authorization": "Bearer $token",
+                                              "Authorization": "Bearer ${ApiClient.instance.accessToken}",
                                             },
                                             fit: BoxFit.cover,
                                             errorBuilder: (BuildContext context,
