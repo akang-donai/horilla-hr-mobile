@@ -440,7 +440,8 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
     await prefs.clear();
   }
 
-  void showCheckInFailedDialog(BuildContext context, String errorMessage) {
+  void showCheckInFailedDialog(BuildContext context, String errorMessage,
+      {bool navigateHome = true}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -451,9 +452,11 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                );
+                if (navigateHome) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => HomePage()),
+                  );
+                }
               },
               child: const Text('OK'),
             ),
@@ -520,7 +523,8 @@ class _CheckInCheckOutFormPageState extends State<CheckInCheckOutFormPage> {
             context,
             clockIn != 'false'
                 ? 'You are already clocked in. Swipe left to clock out.'
-                : 'You are not clocked in. Swipe right to clock in.');
+                : 'You are not clocked in. Swipe right to clock in.',
+            navigateHome: false);
       } else if (result.errorCode == 'not_enrolled') {
         Navigator.pushNamed(context, '/setup_imageface');
       } else if (result.errorCode == 'face_mismatch' && _faceAttempts < 3) {

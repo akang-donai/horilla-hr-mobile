@@ -13,7 +13,9 @@ class ClockResult {
   /// is matched on the message the attendance views return.
   bool get isStateMismatch {
     final m = message?.toLowerCase() ?? '';
-    return m.contains('already clocked-in') || m.contains('already clocked-out');
+    final compact = m.replaceAll('-', ' ');
+    return compact.contains('already clocked in') ||
+        compact.contains('already clocked out');
   }
 }
 
